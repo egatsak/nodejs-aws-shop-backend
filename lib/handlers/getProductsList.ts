@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { products } from "../db/db";
 import { buildResponse } from "../utils";
-import { HttpError } from "../types";
+import { HttpError } from "../errorHandler";
 
 export const handler = async (
   event: APIGatewayProxyEvent

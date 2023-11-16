@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { products } from "../db/db";
 import { buildResponse } from "../utils";
-import { HttpError } from "../types";
+import { HttpError } from "../errorHandler";
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -12,7 +12,7 @@ export const handler = async (
     );
 
     if (!product) {
-      throw new Error("Product not found");
+      throw new HttpError(404, "Product not found");
     }
 
     return buildResponse(200, product);
