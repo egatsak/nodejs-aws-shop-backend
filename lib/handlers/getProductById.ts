@@ -15,9 +15,7 @@ export const handler = async (
       throw new Error("Product not found");
     }
 
-    return buildResponse(200, {
-      product: product,
-    });
+    return buildResponse(200, product);
   } catch (error: unknown) {
     const statusCode = error instanceof HttpError ? error.statusCode : 500;
 

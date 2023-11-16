@@ -1,7 +1,4 @@
-export const buildResponse = (
-  statusCode: number,
-  body: Record<string, unknown>
-) => {
+export const buildResponse = (statusCode: number, body: unknown) => {
   return {
     statusCode,
     headers: {

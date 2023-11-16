@@ -7,9 +7,7 @@ export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    return buildResponse(200, {
-      products: products,
-    });
+    return buildResponse(200, products);
   } catch (error: unknown) {
     const statusCode = error instanceof HttpError ? error.statusCode : 500;
 
