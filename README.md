@@ -26,8 +26,3 @@ Frontend part deployed at AWS CloudFront is connected to the API built using AWS
 * `npm run cdk:bootstrap` provisioning resources for the AWS CDK before deploying AWS CDK apps into an AWS environment
 * `npm run cdk:deploy`      deploy this stack to your default AWS account/region
 * `npm run cdk:destroy` destroys AWS stack & deletes Lambdas, API Gateway & CloudFormation stack
-
-## TODO:
-
-* add swagger
-* add tests
