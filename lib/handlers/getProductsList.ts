@@ -4,7 +4,7 @@ import { buildResponse } from "../utils";
 import { HttpError } from "../errorHandler";
 
 export const handler = async (
-  event: APIGatewayProxyEvent
+  event?: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
     return buildResponse(200, products);

@@ -1,0 +1,130 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "ProductApi",
+    "version": "2023-11-16 18:35:48UTC"
+  },
+  "servers": [
+    {
+      "url": "https://2vrehcwum5.execute-api.eu-north-1.amazonaws.com/{basePath}",
+      "variables": {
+        "basePath": {
+          "default": ""
+        }
+      }
+    }
+  ],
+  "tags": [
+    {
+      "name": "aws:cloudformation:stack-id",
+      "x-amazon-apigateway-tag-value": "arn:aws:cloudformation:eu-north-1:263622645179:stack/NodejsAwsShopBackendStack/65551440-83c3-11ee-adb0-0a528afed7c6"
+    },
+    {
+      "name": "aws:cloudformation:stack-name",
+      "x-amazon-apigateway-tag-value": "NodejsAwsShopBackendStack"
+    },
+    {
+      "name": "aws:cloudformation:logical-id",
+      "x-amazon-apigateway-tag-value": "ProductApi63AD160A"
+    }
+  ],
+  "paths": {
+    "/products/{productId}": {
+      "get": {
+        "summary": "Get Product Details",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": {
+                  "description": "Short Product Description1",
+                  "id": "855e9a53-dd3c-46b8-8cb1-329f133146f6",
+                  "price": 24,
+                  "title": "ProductOne"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Product not found"
+                }
+              }
+            }
+          }
+        }
+      },
+      "x-amazon-apigateway-integration": {
+        "payloadFormatVersion": "2.0",
+        "type": "aws_proxy",
+        "httpMethod": "POST",
+        "uri": "arn:aws:apigateway:eu-north-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-north-1:263622645179:function:getProductsList/invocations",
+        "connectionType": "INTERNET"
+      },
+      "parameters": [
+        {
+          "name": "productId",
+          "in": "path",
+          "description": "Generated path parameter for productId",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/products": {
+      "get": {
+        "summary": "Get a list of products",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "description": "Short Product Description1",
+                    "id": "855e9a53-dd3c-46b8-8cb1-329f133146f6",
+                    "price": 24,
+                    "title": "ProductOne"
+                  },
+                  {
+                    "description": "Short Product Description7",
+                    "id": "d5c67566-72ff-4f1e-b4f0-ecc9b84b2b40",
+                    "price": 15,
+                    "title": "ProductTitle"
+                  },
+                  {
+                    "description": "Short Product Description2",
+                    "id": "a5116cf4-9915-4a91-8424-14dc3d5e6cb2",
+                    "price": 23,
+                    "title": "Product"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "payloadFormatVersion": "2.0",
+          "type": "aws_proxy",
+          "httpMethod": "POST",
+          "uri": "arn:aws:apigateway:eu-north-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-north-1:263622645179:function:getProductById/invocations",
+          "connectionType": "INTERNET"
+        }
+      }
+    }
+  },
+  "x-amazon-apigateway-cors": {
+    "allowMethods": ["*"],
+    "allowHeaders": ["*"],
+    "maxAge": -42,
+    "allowCredentials": false,
+    "allowOrigins": ["*"]
+  },
+  "x-amazon-apigateway-importexport-version": "1.0"
+}
