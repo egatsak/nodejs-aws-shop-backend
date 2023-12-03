@@ -39,6 +39,12 @@ export class NodejsAwsShopBackendStack extends cdk.Stack {
       entry: "lib/handlers/getProductById.ts",
     });
 
+    const createProduct = new NodejsFunction(this, "CreateProductLambda", {
+      ...sharedLambdaProps,
+      functionName: "createProduct",
+      entry: "lib/handlers/createProduct.ts",
+    });
+
     const api = new apiGateway.HttpApi(this, "ProductApi", {
       corsPreflight: {
         allowHeaders: ["*"],
@@ -63,6 +69,15 @@ export class NodejsAwsShopBackendStack extends cdk.Stack {
       ),
       path: "/products/{productId}",
       methods: [apiGateway.HttpMethod.GET],
+    });
+
+    api.addRoutes({
+      integration: new HttpLambdaIntegration(
+        "CreateProductIntegration",
+        createProduct
+      ),
+      path: "/products/{productId}",
+      methods: [apiGateway.HttpMethod.POST],
     });
   }
 }
