@@ -5,6 +5,7 @@ import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { ProductDto, ProductForFrontend, productDtoSchema } from "../dto";
 import { HttpError } from "../errorHandler";
 import { buildResponse } from "../utils";
+import { marshall } from "@aws-sdk/util-dynamodb";
 
 const dynamoDb = new DynamoDBClient({
   region: "eu-north-1",
@@ -13,19 +14,26 @@ const dynamoDb = new DynamoDBClient({
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  console.log("Incoming: POST /products \n" + event);
+  console.log("Incoming: POST /products \n" + event.body);
 
   try {
     const productDto = JSON.parse(event.body ?? "") as ProductDto;
 
-    const validationResult = productDtoSchema.validate(productDto);
-
-    if (validationResult.error) {
-      throw validationResult.error;
-    }
+    const validationResult = await productDtoSchema.validateAsync(productDto);
 
     const { count, ...product } = productDto;
     const productId = randomUUID();
+
+    const productToDb = { ...product, id: productId };
+
+    const stockToDb = {
+      product_id: productId,
+      count: count,
+      id: randomUUID(),
+    };
+
+    console.log({ productToDb });
+    console.log({ stockToDb });
 
     await dynamoDb.send(
       new TransactWriteCommand({
@@ -33,16 +41,13 @@ export const handler = async (
           {
             Put: {
               TableName: "Products",
-              Item: { product, id: productId },
+              Item: productToDb,
             },
           },
           {
             Put: {
               TableName: "Stocks",
-              Item: {
-                product_id: productId,
-                count: count,
-              },
+              Item: stockToDb,
             },
           },
         ],
@@ -55,9 +60,9 @@ export const handler = async (
     } as ProductForFrontend;
 
     return buildResponse(201, createdProduct);
-  } catch (error: unknown) {
+  } catch (error: any) {
     const statusCode = error instanceof HttpError ? error.statusCode : 500;
-
+    console.log(error?.stack);
     return buildResponse(statusCode, {
       message: error instanceof Error ? error.message : "Smth went wrong",
     });

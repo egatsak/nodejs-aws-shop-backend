@@ -1,4 +1,4 @@
-import { ObjectSchema, number, object, string } from "joi";
+import Joi from "joi";
 
 export interface Product {
   id: string;
@@ -22,9 +22,9 @@ export interface ProductDto {
   count: number;
 }
 
-export const productDtoSchema: ObjectSchema<ProductDto> = object({
-  title: string().required(),
-  price: number().required().integer().min(0),
-  description: string(),
-  count: number().required().integer().min(0),
+export const productDtoSchema = Joi.object<ProductDto>({
+  title: Joi.string().required(),
+  price: Joi.number().required().integer().min(0),
+  description: Joi.string(),
+  count: Joi.number().required().integer().min(0),
 });

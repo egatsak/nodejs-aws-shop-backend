@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { buildResponse } from "../utils";
 import { HttpError } from "../errorHandler";
 import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { unmarshall } from "@aws-sdk/util-dynamodb";
 
 const dynamoDb = new DynamoDBClient({
   region: "eu-north-1",
@@ -15,11 +16,11 @@ export const handler = async (
   try {
     const products = (
       await dynamoDb.send(new ScanCommand({ TableName: "Products" }))
-    )?.Items;
+    )?.Items?.map((it) => unmarshall(it));
 
     const stocks = (
       await dynamoDb.send(new ScanCommand({ TableName: "Stocks" }))
-    )?.Items;
+    )?.Items?.map((it) => unmarshall(it));
 
     if (!products) {
       throw new HttpError(404, "Products not found");
