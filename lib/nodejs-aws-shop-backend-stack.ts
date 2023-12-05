@@ -2,13 +2,12 @@ import * as cdk from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apiGateway from "@aws-cdk/aws-apigatewayv2-alpha";
 import { HttpLambdaIntegration } from "@aws-cdk/aws-apigatewayv2-integrations-alpha";
-
+import { TableV2 } from "aws-cdk-lib/aws-dynamodb";
 import {
   NodejsFunction,
   NodejsFunctionProps,
 } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 const sharedLambdaProps: NodejsFunctionProps = {
   runtime: lambda.Runtime.NODEJS_20_X,
@@ -16,16 +15,10 @@ const sharedLambdaProps: NodejsFunctionProps = {
     PRODUCT_AWS_REGION: process.env.PRODUCT_AWS_REGION ?? "eu-north-1",
   },
 };
+
 export class NodejsAwsShopBackendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
-
-    // The code that defines your stack goes here
-
-    // example resource
-    // const queue = new sqs.Queue(this, 'NodejsAwsShopBackendQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
 
     const getProductList = new NodejsFunction(this, "GetProductsListLambda", {
       ...sharedLambdaProps,
@@ -44,6 +37,22 @@ export class NodejsAwsShopBackendStack extends cdk.Stack {
       functionName: "createProduct",
       entry: "lib/handlers/createProduct.ts",
     });
+
+    const productsTable = TableV2.fromTableName(
+      this,
+      "ProductsTable",
+      "Products"
+    );
+    const stocksTable = TableV2.fromTableName(this, "StocksTable", "Stocks");
+
+    productsTable.grantReadData(getProductList);
+    stocksTable.grantReadData(getProductList);
+
+    productsTable.grantReadData(getProductById);
+    stocksTable.grantReadData(getProductById);
+
+    productsTable.grantWriteData(createProduct);
+    stocksTable.grantWriteData(createProduct);
 
     const api = new apiGateway.HttpApi(this, "ProductApi", {
       corsPreflight: {
@@ -76,7 +85,7 @@ export class NodejsAwsShopBackendStack extends cdk.Stack {
         "CreateProductIntegration",
         createProduct
       ),
-      path: "/products/{productId}",
+      path: "/products",
       methods: [apiGateway.HttpMethod.POST],
     });
   }

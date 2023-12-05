@@ -1,20 +1,20 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { products } from "../db/db";
 import { buildResponse } from "../utils";
 import { HttpError } from "../errorHandler";
 import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 
 const dynamoDb = new DynamoDBClient({
-  region: process.env.PRODUCT_AWS_REGION || "eu-west-1",
+  region: "eu-north-1",
 });
 
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  try {
-    const productId = event.pathParameters?.productId;
+  const productId = event.pathParameters?.productId;
 
+  console.log(`Incoming: GET /products/${productId} \n` + event);
+  try {
     if (!productId) {
       throw new HttpError(
         400,
@@ -29,6 +29,7 @@ export const handler = async (
     });
 
     const result = await dynamoDb.send(cmd);
+
     const product = result.Items?.[0] ? unmarshall(result.Items[0]) : null;
 
     if (!product) {
