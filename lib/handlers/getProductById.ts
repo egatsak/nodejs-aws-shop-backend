@@ -1,8 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { buildResponse } from "../utils";
-import { HttpError } from "../errorHandler";
 import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
+import { buildResponse } from "../utils";
+import { HttpError } from "../errorHandler";
 
 const dynamoDb = new DynamoDBClient({
   region: "eu-north-1",
@@ -13,7 +13,7 @@ export const handler = async (
 ): Promise<APIGatewayProxyResult> => {
   const productId = event.pathParameters?.productId;
 
-  console.log(`Incoming: GET /products/${productId} \n` + event);
+  console.log(`Incoming: GET /products/${productId} \n` + event.headers);
   try {
     if (!productId) {
       throw new HttpError(

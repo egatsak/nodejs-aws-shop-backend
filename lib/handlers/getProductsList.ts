@@ -1,17 +1,17 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { buildResponse } from "../utils";
-import { HttpError } from "../errorHandler";
 import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
+import { buildResponse } from "../utils";
+import { HttpError } from "../errorHandler";
 
 const dynamoDb = new DynamoDBClient({
   region: "eu-north-1",
 });
 
 export const handler = async (
-  event?: APIGatewayProxyEvent
+  event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  console.log("Incoming: GET /products \n" + event);
+  console.log("Incoming: GET /products \n" + event.headers);
 
   try {
     const products = (
