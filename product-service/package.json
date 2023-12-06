@@ -18,7 +18,6 @@
     "@aws-cdk/aws-apigatewayv2-integrations-alpha": "^2.108.1-alpha.0",
     "@types/aws-lambda": "^8.10.126",
     "@types/jest": "^29.5.8",
-    "@types/joi": "^17.2.3",
     "@types/node": "20.9.0",
     "aws-cdk": "2.108.1",
     "esbuild": "^0.19.5",
