@@ -44,10 +44,9 @@ export class ImportServiceStack extends cdk.Stack {
       "ImportsApiGateway",
       {
         restApiName: "Import Service",
+
         defaultCorsPreflightOptions: {
           allowOrigins: apiGateway.Cors.ALL_ORIGINS,
-          allowMethods: apiGateway.Cors.ALL_METHODS,
-          allowHeaders: ["*"],
         },
       }
     );
@@ -62,7 +61,12 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
-    const resource = importsApiGateway.root.addResource("import");
+    const resource = importsApiGateway.root.addResource("import", {
+      defaultCorsPreflightOptions: {
+        allowOrigins: apiGateway.Cors.ALL_ORIGINS,
+      },
+    });
+
     resource.addMethod("GET", lambdaIntegration, {
       requestParameters: {
         "method.request.querystring.name": true,
