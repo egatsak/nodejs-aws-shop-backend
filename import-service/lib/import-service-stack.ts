@@ -44,9 +44,10 @@ export class ImportServiceStack extends cdk.Stack {
       "ImportsApiGateway",
       {
         restApiName: "Import Service",
-
         defaultCorsPreflightOptions: {
+          allowHeaders: ["*"],
           allowOrigins: apiGateway.Cors.ALL_ORIGINS,
+          allowMethods: apiGateway.Cors.ALL_METHODS,
         },
       }
     );
@@ -61,11 +62,7 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
-    const resource = importsApiGateway.root.addResource("import", {
-      defaultCorsPreflightOptions: {
-        allowOrigins: apiGateway.Cors.ALL_ORIGINS,
-      },
-    });
+    const resource = importsApiGateway.root.addResource("import");
 
     resource.addMethod("GET", lambdaIntegration, {
       requestParameters: {
@@ -91,6 +88,7 @@ export class ImportServiceStack extends cdk.Stack {
       new LambdaDestination(importFileParserFunction),
       {
         prefix: "uploaded/",
+        suffix: "csv",
       }
     );
 
