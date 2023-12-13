@@ -7,6 +7,11 @@ import {
   GetObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import {
+  SQSClient,
+  SendMessageCommand,
+  SendMessageCommandOutput,
+} from "@aws-sdk/client-sqs";
 import { parse } from "csv-parse";
 
 export const handler = async (event: S3Event) => {
@@ -14,8 +19,10 @@ export const handler = async (event: S3Event) => {
 
   try {
     const s3Client = new S3Client();
+    const sqsClient = new SQSClient();
 
     const s3File = event.Records[0].s3;
+
     const getObjectCommandOutput = await s3Client.send(
       new GetObjectCommand({
         Bucket: s3File.bucket.name,
@@ -23,14 +30,32 @@ export const handler = async (event: S3Event) => {
       })
     );
 
+    const sendMessageRequests: Promise<SendMessageCommandOutput>[] = [];
+
     await (getObjectCommandOutput.Body as Readable)
-      .pipe(parse())
+      .pipe(
+        parse({
+          columns: ["title", "price", "description", "count"],
+          fromLine: 2,
+        })
+      )
       .on("data", (row: string) => {
-        console.log(row);
+        sendMessageRequests.push(
+          sqsClient.send(
+            new SendMessageCommand({
+              QueueUrl: process.env.SQS_NAME,
+              MessageBody: JSON.stringify(row),
+            })
+          )
+        );
+
+        console.log("Row pushed to queue: ", row);
       })
-      .on("error", (error: Error) => {
-        console.error("Error parsing CSV:", error);
+      .on("error", (error: unknown) => {
+        console.error("CSV parsing error:\n", error);
       });
+
+    await Promise.all(sendMessageRequests);
 
     await s3Client.send(
       new CopyObjectCommand({
