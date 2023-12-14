@@ -3,16 +3,15 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { ProductDto, ProductForFrontend, productDtoSchema } from "../dto";
-import { HttpError } from "../errorHandler";
 import { buildResponse } from "../utils";
-
-const dynamoDb = new DynamoDBClient({
-  region: "eu-north-1",
-});
 
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  const dynamoDb = new DynamoDBClient({
+    region: "eu-north-1",
+  });
+
   console.log("Incoming: POST /products \n" + event.body);
 
   try {

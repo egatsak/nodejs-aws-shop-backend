@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as apiGateway from "aws-cdk-lib/aws-apigateway";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as sqs from "aws-cdk-lib/aws-sqs";
 import {
   NodejsFunction,
   NodejsFunctionProps,
@@ -17,6 +18,15 @@ export class ImportServiceStack extends cdk.Stack {
       this,
       "ImportServiceBucket",
       "upload-aws-course-egatsak"
+    );
+
+    const catalogItemsQueue = sqs.Queue.fromQueueArn(
+      this,
+      "CatalogItemsQueue",
+      this.formatArn({
+        service: "sqs",
+        resource: "CatalogItemsQueue",
+      })
     );
 
     const sharedLambdaProps: NodejsFunctionProps = {
@@ -63,6 +73,7 @@ export class ImportServiceStack extends cdk.Stack {
     );
 
     const resource = importsApiGateway.root.addResource("import");
+
     resource.addMethod("GET", lambdaIntegration, {
       requestParameters: {
         "method.request.querystring.name": true,
@@ -76,6 +87,7 @@ export class ImportServiceStack extends cdk.Stack {
         ...sharedLambdaProps,
         environment: {
           PRODUCT_AWS_REGION: process.env.PRODUCT_AWS_REGION ?? "eu-north-1",
+          SQS_NAME: catalogItemsQueue.queueUrl,
         },
         entry: "lib/handlers/importFileParser.ts",
         functionName: "importFileParser",
@@ -90,6 +102,7 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
+    catalogItemsQueue.grantSendMessages(importFileParserFunction);
     importServiceBucket.grantReadWrite(importFileParserFunction);
   }
 }

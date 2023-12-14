@@ -2,6 +2,7 @@ import { APIGatewayEvent } from "aws-lambda";
 import { S3Client } from "@aws-sdk/client-s3";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { buildResponse } from "../utils";
+import { HttpError } from "./errorHandler";
 
 const s3 = new S3Client({ region: "eu-north-1" });
 const bucketName = "upload-aws-course-egatsak";
@@ -9,9 +10,13 @@ const bucketName = "upload-aws-course-egatsak";
 export const handler = async function (event: APIGatewayEvent) {
   try {
     if (!event.queryStringParameters) {
-      return buildResponse(400, { message: "Please provide queryString" });
+      throw new HttpError(400, "Please provide queryString");
     }
     const { name } = event.queryStringParameters;
+
+    if (!name?.endsWith(".csv")) {
+      throw new HttpError(400, "Incorrect file type");
+    }
 
     const presignedPost = await createPresignedPost(s3, {
       Bucket: bucketName,
@@ -19,7 +24,7 @@ export const handler = async function (event: APIGatewayEvent) {
       Fields: {
         "Content-Type": "text/csv",
       },
-      Expires: 120,
+      Expires: 12000,
     });
 
     return buildResponse(200, {
