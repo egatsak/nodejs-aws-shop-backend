@@ -1,8 +1,7 @@
 import { APIGatewayProxyEvent } from "aws-lambda";
-import { products } from "../../product-service/lib/db/db";
-import { buildResponse } from "../../product-service/lib/utils";
-import { HttpError } from "../../product-service/lib/errorHandler";
-import { handler } from "../../product-service/lib/handlers/getProductsList";
+import { buildResponse } from "../../lib/utils";
+import { HttpError } from "../../lib/errorHandler";
+import { handler } from "../../lib/handlers/getProductsList";
 
 // Mocking the necessary modules
 jest.mock("../../lib/db/db", () => ({

@@ -1,12 +1,16 @@
 import * as cdk from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apiGateway from "@aws-cdk/aws-apigatewayv2-alpha";
+import * as sqs from "aws-cdk-lib/aws-sqs";
+import * as sns from "aws-cdk-lib/aws-sns";
+import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import { HttpLambdaIntegration } from "@aws-cdk/aws-apigatewayv2-integrations-alpha";
 import { TableV2 } from "aws-cdk-lib/aws-dynamodb";
 import {
   NodejsFunction,
   NodejsFunctionProps,
 } from "aws-cdk-lib/aws-lambda-nodejs";
+import { EmailSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
 import { Construct } from "constructs";
 
 const sharedLambdaProps: NodejsFunctionProps = {
@@ -88,5 +92,46 @@ export class NodejsAwsShopBackendStack extends cdk.Stack {
       path: "/products",
       methods: [apiGateway.HttpMethod.POST],
     });
+
+    const createProductTopic = new sns.Topic(this, "CreateProductTopic", {
+      displayName: "Create Product Topic",
+    });
+
+    createProductTopic.addSubscription(
+      new EmailSubscription("egatsak@yandex.ru", {
+        filterPolicy: {
+          price: sns.SubscriptionFilter.numericFilter({
+            greaterThan: 1000,
+          }),
+        },
+      })
+    );
+
+    createProductTopic.addSubscription(
+      new EmailSubscription("greenglaz@gmail.com")
+    );
+
+    const catalogItemsQueue = new sqs.Queue(this, "CatalogItemsQueue", {
+      queueName: "CatalogItemsQueue",
+    });
+
+    const catalogBatchProcessFunction = new NodejsFunction(
+      this,
+      "CatalogBatchProcessFunction",
+      {
+        ...sharedLambdaProps,
+        environment: {
+          PRODUCT_AWS_REGION: process.env.PRODUCT_AWS_REGION ?? "eu-north-1",
+          CREATE_PRODUCT_TOPIC_ARN: createProductTopic.topicArn,
+        },
+        entry: "lib/handlers/catalogBatchProcess.ts",
+        handler: "catalogBatchProcess",
+      }
+    );
+
+    createProductTopic.grantPublish(catalogBatchProcessFunction);
+    catalogBatchProcessFunction.addEventSource(
+      new lambdaEventSources.SqsEventSource(catalogItemsQueue, { batchSize: 5 })
+    );
   }
 }
