@@ -130,6 +130,7 @@ export class NodejsAwsShopBackendStack extends cdk.Stack {
     );
 
     createProductTopic.grantPublish(catalogBatchProcessFunction);
+
     catalogBatchProcessFunction.addEventSource(
       new lambdaEventSources.SqsEventSource(catalogItemsQueue, { batchSize: 5 })
     );

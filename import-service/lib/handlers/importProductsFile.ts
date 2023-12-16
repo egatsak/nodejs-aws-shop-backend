@@ -2,7 +2,7 @@ import { APIGatewayEvent } from "aws-lambda";
 import { S3Client } from "@aws-sdk/client-s3";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { buildResponse } from "../utils";
-import { HttpError } from "./errorHandler";
+import { HttpError } from "../errorHandler";
 
 const s3 = new S3Client({ region: "eu-north-1" });
 const bucketName = "upload-aws-course-egatsak";

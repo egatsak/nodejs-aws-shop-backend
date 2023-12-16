@@ -18,6 +18,8 @@
     "@aws-sdk/client-sqs": "^3.470.0",
     "@aws-sdk/s3-presigned-post": "^3.465.0",
     "@aws-sdk/s3-request-presigner": "^3.465.0",
+    "@aws-cdk/aws-apigatewayv2-alpha": "^2.108.1-alpha.0",
+    "@aws-cdk/aws-apigatewayv2-integrations-alpha": "^2.108.1-alpha.0",
     "@types/aws-lambda": "^8.10.130",
     "@types/jest": "^29.5.8",
     "@types/node": "20.9.0",
