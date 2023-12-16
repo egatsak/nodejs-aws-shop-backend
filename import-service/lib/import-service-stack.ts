@@ -6,9 +6,13 @@ import {
   NodejsFunction,
   NodejsFunctionProps,
 } from "aws-cdk-lib/aws-lambda-nodejs";
-import { Runtime } from "aws-cdk-lib/aws-lambda";
+import { Runtime, CfnPermission, Function } from "aws-cdk-lib/aws-lambda";
 import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
 import { Construct } from "constructs";
+import {
+  HttpLambdaAuthorizer,
+  HttpLambdaResponseType,
+} from "@aws-cdk/aws-apigatewayv2-authorizers-alpha";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -28,6 +32,23 @@ export class ImportServiceStack extends cdk.Stack {
         resource: "CatalogItemsQueue",
       })
     );
+
+    const basicAuthorizer = Function.fromFunctionArn(
+      this,
+      "basicAuthorizer",
+      process.env.AUTHORIZER_FUNCTION_ARN!
+    );
+
+    const authorizer = new HttpLambdaAuthorizer("Authorizer", basicAuthorizer, {
+      responseTypes: [HttpLambdaResponseType.IAM],
+      resultsCacheTtl: cdk.Duration.seconds(0),
+    });
+
+    new CfnPermission(this, "MyAuthorizerPermission", {
+      action: "lambda:InvokeFunction",
+      functionName: basicAuthorizer.functionName,
+      principal: "apigateway.amazonaws.com",
+    });
 
     const sharedLambdaProps: NodejsFunctionProps = {
       runtime: Runtime.NODEJS_20_X,
@@ -57,7 +78,7 @@ export class ImportServiceStack extends cdk.Stack {
         defaultCorsPreflightOptions: {
           allowOrigins: apiGateway.Cors.ALL_ORIGINS,
           allowMethods: apiGateway.Cors.ALL_METHODS,
-          allowHeaders: ["*"],
+          allowHeaders: apiGateway.Cors.DEFAULT_HEADERS,
         },
       }
     );
@@ -72,12 +93,19 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
-    const resource = importsApiGateway.root.addResource("import");
+    const resource = importsApiGateway.root.addResource("import", {
+      defaultCorsPreflightOptions: {
+        allowHeaders: ["*"],
+        allowOrigins: ["*"],
+        allowMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
+      },
+    });
 
     resource.addMethod("GET", lambdaIntegration, {
       requestParameters: {
         "method.request.querystring.name": true,
       },
+      authorizer,
     });
 
     const importFileParserFunction = new NodejsFunction(
