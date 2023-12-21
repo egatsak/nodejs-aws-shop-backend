@@ -105,7 +105,10 @@ export class ImportServiceStack extends cdk.Stack {
       requestParameters: {
         "method.request.querystring.name": true,
       },
-      authorizer,
+      authorizer: {
+        ...authorizer,
+        authorizerId: "authorizerId",
+      },
     });
 
     const importFileParserFunction = new NodejsFunction(
