@@ -8,7 +8,6 @@ import {
   NodejsFunctionProps,
 } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 const sharedLambdaProps: NodejsFunctionProps = {
   runtime: lambda.Runtime.NODEJS_20_X,
@@ -16,16 +15,10 @@ const sharedLambdaProps: NodejsFunctionProps = {
     PRODUCT_AWS_REGION: process.env.PRODUCT_AWS_REGION ?? "eu-north-1",
   },
 };
+
 export class NodejsAwsShopBackendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
-
-    // The code that defines your stack goes here
-
-    // example resource
-    // const queue = new sqs.Queue(this, 'NodejsAwsShopBackendQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
 
     const getProductList = new NodejsFunction(this, "GetProductsListLambda", {
       ...sharedLambdaProps,
