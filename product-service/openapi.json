@@ -116,6 +116,53 @@
           "uri": "arn:aws:apigateway:eu-north-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-north-1:263622645179:function:getProductById/invocations",
           "connectionType": "INTERNET"
         }
+
+      },
+      "post": {
+        "summary": "Insert new product to a database",
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "example": {
+                  "description": "Short Product Description2",
+                  "count": 6,
+                  "price": 12,
+                  "title": "ProductTwo",
+                  "id": "d714e492-81e5-4b4a-adba-a4be7cbb663e"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "\"count\" must be a number"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Internal server error"
+                }
+              }
+            }
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "payloadFormatVersion": "2.0",
+          "type": "aws_proxy",
+          "httpMethod": "POST",
+          "uri": "arn:aws:apigateway:eu-north-1:lambda:path/2015-03-31/functions/arn:aws:lambda:eu-north-1:263622645179:function:getProductById/invocations",
+          "connectionType": "INTERNET"
+        }
       }
     }
   },

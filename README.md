@@ -16,7 +16,9 @@ Frontend part deployed at AWS CloudFront is connected to the API built using AWS
 
 [{{URL}}/products/{id}](https://km96rjp673.execute-api.us-east-1.amazonaws.com/products/855e9a53-dd3c-46b8-8cb1-329f133146f6) - returns JSON with a single product
 
-[{{URL}}/products/non-existing-id](https://2vrehcwum5.execute-api.eu-north-1.amazonaws.com/products/some-random-id) - returns 404 status code & 'Product Not Found' error message
+POST [{{URL}}/products](https://2vrehcwum5.execute-api.eu-north-1.amazonaws.com/products) - returns 201 status code & JSON with a single created product
+
+GET [{{URL}}/products/non-existing-id](https://2vrehcwum5.execute-api.eu-north-1.amazonaws.com/products/some-random-id) - returns 404 status code & 'Product Not Found' error message
 
 ## Useful commands
 

@@ -1,4 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+
 import { products } from "../db/db";
 import { buildResponse } from "../utils";
 import { HttpError } from "../errorHandler";
