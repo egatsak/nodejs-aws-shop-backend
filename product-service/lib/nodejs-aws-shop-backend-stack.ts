@@ -1,8 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as apiGateway from "@aws-cdk/aws-apigatewayv2-alpha";
-import { HttpLambdaIntegration } from "@aws-cdk/aws-apigatewayv2-integrations-alpha";
-
+import * as apiGateway from "aws-cdk-lib/aws-apigatewayv2";
+import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import {
   NodejsFunction,
   NodejsFunctionProps,
@@ -12,7 +11,7 @@ import { Construct } from "constructs";
 const sharedLambdaProps: NodejsFunctionProps = {
   runtime: lambda.Runtime.NODEJS_20_X,
   environment: {
-    PRODUCT_AWS_REGION: process.env.PRODUCT_AWS_REGION ?? "eu-north-1",
+    PRODUCT_AWS_REGION: process.env.PRODUCT_AWS_REGION ?? "us-west-1",
   },
 };
 
@@ -32,7 +31,7 @@ export class NodejsAwsShopBackendStack extends cdk.Stack {
       entry: "lib/handlers/getProductById.ts",
     });
 
-    const api = new apiGateway.HttpApi(this, "ProductApi", {
+    const api = new cdk.aws_apigatewayv2.HttpApi(this, "ProductApi", {
       corsPreflight: {
         allowHeaders: ["*"],
         allowOrigins: ["*"],
