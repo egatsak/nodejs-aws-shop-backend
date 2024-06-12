@@ -1,9 +1,4 @@
-interface Product {
-  id: string;
-  title: string;
-  description?: string;
-  price: number;
-}
+import { Product } from "../types";
 
 export const products: Product[] = [
   {
