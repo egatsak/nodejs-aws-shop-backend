@@ -1,4 +1,4 @@
-import * as cdk from "aws-cdk-lib";
+import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apiGateway from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
@@ -11,12 +11,12 @@ import { Construct } from "constructs";
 const sharedLambdaProps: NodejsFunctionProps = {
   runtime: lambda.Runtime.NODEJS_20_X,
   environment: {
-    PRODUCT_AWS_REGION: process.env.PRODUCT_AWS_REGION ?? "us-west-1",
+    PRODUCT_AWS_REGION: process.env.region ?? "us-east-1",
   },
 };
 
-export class NodejsAwsShopBackendStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+export class NodejsAwsShopBackendStack extends Stack {
+  constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
     const getProductList = new NodejsFunction(this, "GetProductsListLambda", {
@@ -31,7 +31,7 @@ export class NodejsAwsShopBackendStack extends cdk.Stack {
       entry: "lib/handlers/getProductById.ts",
     });
 
-    const api = new cdk.aws_apigatewayv2.HttpApi(this, "ProductApi", {
+    const api = new apiGateway.HttpApi(this, "ProductApi", {
       corsPreflight: {
         allowHeaders: ["*"],
         allowOrigins: ["*"],
@@ -55,6 +55,10 @@ export class NodejsAwsShopBackendStack extends cdk.Stack {
       ),
       path: "/products/{productId}",
       methods: [apiGateway.HttpMethod.GET],
+    });
+
+    new CfnOutput(this, "ApiUrl", {
+      value: api.url ?? "",
     });
   }
 }
