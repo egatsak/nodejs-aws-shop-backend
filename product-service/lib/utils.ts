@@ -5,6 +5,7 @@ export const buildResponse = (statusCode: number, body: unknown) => {
       "Accept-Control-Allow-Credentials": true,
       "Accept-Control-Allow-Origin": "*",
       "Accept-Control-Allow-Headers": "*",
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
   };
