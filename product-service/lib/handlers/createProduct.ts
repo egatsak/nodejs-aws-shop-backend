@@ -1,14 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
-import { ProductDto, ProductForFrontend, productDtoSchema } from "../dto";
-import { HttpError } from "../errorHandler";
+import { dbDocumentClient } from "../db/client";
 import { buildResponse } from "../utils";
-
-const dynamoDb = new DynamoDBClient({
-  region: "eu-north-1",
-});
+import { HttpError } from "../errorHandler";
+import { ProductDto, productDtoSchema } from "../dtos";
+import type { PopulatedProduct } from "../types";
+import { productsTableName, stocksTableName } from "../constants";
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -31,18 +29,18 @@ export const handler = async (
       id: randomUUID(),
     };
 
-    await dynamoDb.send(
+    await dbDocumentClient.send(
       new TransactWriteCommand({
         TransactItems: [
           {
             Put: {
-              TableName: "Products",
+              TableName: productsTableName,
               Item: productToDb,
             },
           },
           {
             Put: {
-              TableName: "Stocks",
+              TableName: stocksTableName,
               Item: stockToDb,
             },
           },
@@ -53,11 +51,11 @@ export const handler = async (
     const createdProduct = {
       ...productDto,
       id: productId,
-    } as ProductForFrontend;
+    } satisfies PopulatedProduct;
 
     return buildResponse(201, createdProduct);
-  } catch (error: any) {
-    const statusCode = error.statusCode ?? 500;
+  } catch (error) {
+    const statusCode = error instanceof HttpError ? error.statusCode : 500;
 
     return buildResponse(statusCode, {
       message: error instanceof Error ? error.message : "Smth went wrong",

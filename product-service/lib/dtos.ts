@@ -1,19 +1,4 @@
-import Joi from "joi";
-
-export interface Product {
-  id: string;
-  title: string;
-  price: number;
-  description?: string;
-}
-
-export interface ProductForFrontend {
-  id: string;
-  title: string;
-  price: number;
-  description?: string;
-  count: number;
-}
+import Joi = require("joi");
 
 export interface ProductDto {
   title: string;
