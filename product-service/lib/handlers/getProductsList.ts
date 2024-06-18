@@ -5,9 +5,10 @@ import { buildResponse } from "../utils";
 import { HttpError } from "../errorHandler";
 import { productsTableName, stocksTableName } from "../constants";
 import type { MyScanCommandOutput } from "../db/types";
-import type { Product, Stock } from "../types";
+import type { PopulatedProduct, Product, Stock } from "../types";
 
 // TODO add env vars for table names, etc
+// TODO promise.all
 
 export const handler = async (
   event?: APIGatewayProxyEvent
@@ -36,8 +37,8 @@ export const handler = async (
       );
       return {
         ...product,
-        stock: stock?.count ?? 0,
-      };
+        count: stock?.count ?? 0,
+      } satisfies PopulatedProduct;
     });
 
     return buildResponse(200, resultProducts);
