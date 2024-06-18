@@ -7,6 +7,7 @@ import {
   NodejsFunctionProps,
 } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
+import { ProductServiceDatabase } from "./db/db";
 
 const sharedLambdaProps: NodejsFunctionProps = {
   runtime: lambda.Runtime.NODEJS_20_X,
@@ -19,7 +20,7 @@ export class NodejsAwsShopBackendStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const getProductList = new NodejsFunction(this, "GetProductsListLambda", {
+    const getProductsList = new NodejsFunction(this, "GetProductsListLambda", {
       ...sharedLambdaProps,
       functionName: "getProductsList",
       entry: "lib/handlers/getProductsList.ts",
@@ -31,6 +32,12 @@ export class NodejsAwsShopBackendStack extends Stack {
       entry: "lib/handlers/getProductById.ts",
     });
 
+    const createProduct = new NodejsFunction(this, "CreateProductLambda", {
+      ...sharedLambdaProps,
+      functionName: "createProduct",
+      entry: "lib/handlers/createProduct.ts",
+    });
+
     const api = new apiGateway.HttpApi(this, "ProductApi", {
       corsPreflight: {
         allowHeaders: ["*"],
@@ -39,10 +46,18 @@ export class NodejsAwsShopBackendStack extends Stack {
       },
     });
 
+    new ProductServiceDatabase(this, "ProductServiceDatabase", {
+      lambdas: {
+        createProduct,
+        getProductById,
+        getProductsList,
+      },
+    });
+
     api.addRoutes({
       integration: new HttpLambdaIntegration(
         "GetProductsListIntegration",
-        getProductList
+        getProductsList
       ),
       path: "/products",
       methods: [apiGateway.HttpMethod.GET],
@@ -55,6 +70,15 @@ export class NodejsAwsShopBackendStack extends Stack {
       ),
       path: "/products/{productId}",
       methods: [apiGateway.HttpMethod.GET],
+    });
+
+    api.addRoutes({
+      integration: new HttpLambdaIntegration(
+        "CreateProductIntegration",
+        createProduct
+      ),
+      path: "/products",
+      methods: [apiGateway.HttpMethod.POST],
     });
 
     new CfnOutput(this, "ApiUrl", {
