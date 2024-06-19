@@ -5,7 +5,7 @@ import { HttpError } from "../errorHandler";
 import { buildResponse } from "../utils";
 import type { MyQueryCommandOutput } from "../db/types";
 import type { PopulatedProduct, Product, Stock } from "../types";
-import { PRODUCTS_TABLE_NAME } from "../constants";
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -29,7 +29,7 @@ export const handler = async (
 
     const { Items: stocks } = (await dbDocumentClient.send(
       new QueryCommand({
-        TableName: process.env.STOCKS_TABLE_NAME,
+        TableName: STOCKS_TABLE_NAME,
         KeyConditionExpression: "product_id = :product_id",
         ExpressionAttributeValues: {
           ":product_id": event.pathParameters?.productId,

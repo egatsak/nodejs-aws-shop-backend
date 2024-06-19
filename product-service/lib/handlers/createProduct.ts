@@ -7,6 +7,7 @@ import { HttpError } from "../errorHandler";
 import { ProductDto, productDtoSchema } from "../dtos";
 import type { PopulatedProduct } from "../types";
 import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
+import Joi = require("joi");
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -55,6 +56,11 @@ export const handler = async (
 
     return buildResponse(201, createdProduct);
   } catch (error) {
+    if (error instanceof Joi.ValidationError) {
+      return buildResponse(400, {
+        message: error instanceof Error ? error.message : "Smth went wrong",
+      });
+    }
     const statusCode = error instanceof HttpError ? error.statusCode : 500;
 
     return buildResponse(statusCode, {
