@@ -3,28 +3,27 @@ import { ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { dbDocumentClient } from "../db/client";
 import { buildResponse } from "../utils";
 import { HttpError } from "../errorHandler";
-import { productsTableName, stocksTableName } from "../constants";
 import type { MyScanCommandOutput } from "../db/types";
 import type { PopulatedProduct, Product, Stock } from "../types";
-
-// TODO add env vars for table names, etc
-// TODO promise.all
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
 
 export const handler = async (
   event?: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-    const { Items: productItems } = (await dbDocumentClient.send(
-      new ScanCommand({
-        TableName: productsTableName,
-      })
-    )) as MyScanCommandOutput<Product[]>;
+    const [{ Items: productItems }, { Items: stockItems }] = await Promise.all([
+      (await dbDocumentClient.send(
+        new ScanCommand({
+          TableName: PRODUCTS_TABLE_NAME,
+        })
+      )) as MyScanCommandOutput<Product[]>,
 
-    const { Items: stockItems } = (await dbDocumentClient.send(
-      new ScanCommand({
-        TableName: stocksTableName,
-      })
-    )) as MyScanCommandOutput<Stock[]>;
+      (await dbDocumentClient.send(
+        new ScanCommand({
+          TableName: STOCKS_TABLE_NAME,
+        })
+      )) as MyScanCommandOutput<Stock[]>,
+    ]);
 
     const availableProducts = productItems ?? [];
     const availableStocks = stockItems ?? [];

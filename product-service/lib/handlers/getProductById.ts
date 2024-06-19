@@ -1,11 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { buildResponse } from "../utils";
-import { HttpError } from "../errorHandler";
-import { MyQueryCommandOutput } from "../db/types";
-import { PopulatedProduct, Product, Stock } from "../types";
-import { dbDocumentClient } from "../db/client";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { productsTableName } from "../constants";
+import { dbDocumentClient } from "../db/client";
+import { HttpError } from "../errorHandler";
+import { buildResponse } from "../utils";
+import type { MyQueryCommandOutput } from "../db/types";
+import type { PopulatedProduct, Product, Stock } from "../types";
+import { PRODUCTS_TABLE_NAME } from "../constants";
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -13,7 +13,7 @@ export const handler = async (
   try {
     const { Items: products } = (await dbDocumentClient.send(
       new QueryCommand({
-        TableName: productsTableName,
+        TableName: PRODUCTS_TABLE_NAME,
         KeyConditionExpression: "id = :id",
         ExpressionAttributeValues: {
           ":id": event.pathParameters?.productId,

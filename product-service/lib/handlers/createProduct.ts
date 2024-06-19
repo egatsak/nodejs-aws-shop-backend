@@ -6,7 +6,7 @@ import { buildResponse } from "../utils";
 import { HttpError } from "../errorHandler";
 import { ProductDto, productDtoSchema } from "../dtos";
 import type { PopulatedProduct } from "../types";
-import { productsTableName, stocksTableName } from "../constants";
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -34,13 +34,13 @@ export const handler = async (
         TransactItems: [
           {
             Put: {
-              TableName: productsTableName,
+              TableName: PRODUCTS_TABLE_NAME,
               Item: productToDb,
             },
           },
           {
             Put: {
-              TableName: stocksTableName,
+              TableName: STOCKS_TABLE_NAME,
               Item: stockToDb,
             },
           },

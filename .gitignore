@@ -3,6 +3,7 @@
 *.d.ts
 node_modules
 .env
+fake-tests
 
 # CDK asset staging directory
 .cdk.staging

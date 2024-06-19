@@ -4,8 +4,8 @@ import {
   DynamoDBDocumentClient,
 } from "@aws-sdk/lib-dynamodb";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { Product, Stock } from "../types";
-import { productsTableName, stocksTableName } from "../constants";
+import type { Product, Stock } from "../types";
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
 import "dotenv/config";
 
 const dbClient = new DynamoDBClient({
@@ -68,7 +68,7 @@ Promise.all([
   dbDocumentClient.send(
     new BatchWriteCommand({
       RequestItems: {
-        [productsTableName]: products.map((product) => ({
+        [PRODUCTS_TABLE_NAME]: products.map((product) => ({
           PutRequest: {
             Item: product,
           },
@@ -79,7 +79,7 @@ Promise.all([
   dbDocumentClient.send(
     new BatchWriteCommand({
       RequestItems: {
-        [stocksTableName]: stocks.map((stock) => ({
+        [STOCKS_TABLE_NAME]: stocks.map((stock) => ({
           PutRequest: {
             Item: stock,
           },

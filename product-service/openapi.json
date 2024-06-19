@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "ProductApi",
-    "version": "2024-06-12 10:15:21UTC"
+    "version": "2024-06-19 10:15:21UTC"
   },
   "servers": [
     {
@@ -75,17 +75,76 @@
             }
           }
         }
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "201 response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OneProductModel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400 response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestModel"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
   "components": {
     "schemas": {
       "NotFoundModel": {
-        "title": "Error",
+        "title": "Error 404",
         "required": ["message"],
         "type": "object",
         "properties": {
           "message": {
+            "type": "string"
+          }
+        }
+      },
+      "BadRequestModel": {
+        "title": "Error 400",
+        "required": ["message"],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateProductModel": {
+        "title": "Product DTO",
+        "required": ["description", "price", "title"],
+        "type": "object",
+        "properties": {
+          "price": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "title": {
             "type": "string"
           }
         }
@@ -96,7 +155,7 @@
         "type": "object",
         "properties": {
           "price": {
-            "type": "integer"
+            "type": "number"
           },
           "description": {
             "type": "string"
@@ -106,6 +165,9 @@
           },
           "title": {
             "type": "string"
+          },
+          "count": {
+            "type": "integer"
           }
         }
       },

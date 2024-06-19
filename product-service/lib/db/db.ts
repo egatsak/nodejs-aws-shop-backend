@@ -6,7 +6,7 @@ import {
   TableV2,
 } from "aws-cdk-lib/aws-dynamodb";
 import { RemovalPolicy } from "aws-cdk-lib";
-import { productsTableName, stocksTableName } from "../constants";
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 
 export interface ProductServiceDatabaseProps {
@@ -28,7 +28,7 @@ export class ProductServiceDatabase extends Construct {
     const { getProductsList, getProductById, createProduct } = props.lambdas;
 
     const productsTable = new TableV2(this, "Products", {
-      tableName: productsTableName,
+      tableName: PRODUCTS_TABLE_NAME,
       encryption: TableEncryptionV2.dynamoOwnedKey(),
       partitionKey: { name: "id", type: AttributeType.STRING },
       sortKey: { name: "title", type: AttributeType.STRING },
@@ -40,7 +40,7 @@ export class ProductServiceDatabase extends Construct {
     productsTable.grantReadData(getProductsList);
 
     const stocksTable = new TableV2(this, "Stocks", {
-      tableName: stocksTableName,
+      tableName: STOCKS_TABLE_NAME,
       partitionKey: { name: "product_id", type: AttributeType.STRING },
       billing: Billing.onDemand(),
       encryption: TableEncryptionV2.dynamoOwnedKey(),
