@@ -1,20 +1,18 @@
 import { Readable } from "node:stream";
 import { S3Event } from "aws-lambda";
-import { buildResponse } from "../utils";
 import {
   CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
-  S3Client,
 } from "@aws-sdk/client-s3";
 import { parse } from "csv-parse";
+import { buildResponse } from "../utils";
+import { s3Client } from "../client";
 
 export const handler = async (event: S3Event) => {
   console.log("importFileParser: ", event.Records);
 
   try {
-    const s3Client = new S3Client();
-
     const s3File = event.Records[0].s3;
     const getObjectCommandOutput = await s3Client.send(
       new GetObjectCommand({
@@ -23,7 +21,7 @@ export const handler = async (event: S3Event) => {
       })
     );
 
-    await (getObjectCommandOutput.Body as Readable)
+    (getObjectCommandOutput.Body as Readable)
       .pipe(parse())
       .on("data", (row: string) => {
         console.log(row);

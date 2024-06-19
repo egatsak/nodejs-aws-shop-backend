@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
+import "source-map-support/register";
+import "dotenv/config";
 import { ImportServiceStack } from "../lib/import-service-stack";
 
 const app = new cdk.App();
@@ -16,7 +17,7 @@ new ImportServiceStack(app, "ImportServiceStack", {
   // env: { account: '123456789012', region: 'us-east-1' },
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
   env: {
-    region: "eu-north-1",
+    region: process.env.AWS_REGION ?? "us-east-1",
   },
 });
 

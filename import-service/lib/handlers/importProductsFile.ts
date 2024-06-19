@@ -1,20 +1,19 @@
 import { APIGatewayEvent } from "aws-lambda";
-import { S3Client } from "@aws-sdk/client-s3";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
+import { s3Client } from "../client";
 import { buildResponse } from "../utils";
 
-const s3 = new S3Client({ region: "eu-north-1" });
-const bucketName = "upload-aws-course-egatsak";
-
 export const handler = async function (event: APIGatewayEvent) {
+  console.log("importProductsFile: ", event);
+
   try {
     if (!event.queryStringParameters) {
       return buildResponse(400, { message: "Please provide queryString" });
     }
     const { name } = event.queryStringParameters;
 
-    const presignedPost = await createPresignedPost(s3, {
-      Bucket: bucketName,
+    const presignedPost = await createPresignedPost(s3Client, {
+      Bucket: process.env.BUCKET_NAME ?? "",
       Key: `uploaded/${name}`,
       Fields: {
         "Content-Type": "text/csv",

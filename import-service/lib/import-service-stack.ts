@@ -13,16 +13,30 @@ export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const importServiceBucket = s3.Bucket.fromBucketName(
-      this,
-      "ImportServiceBucket",
-      "upload-aws-course-egatsak"
-    );
+    const importServiceBucket = new s3.Bucket(this, "ImportServiceS3Bucket", {
+      bucketName: "ImportServiceBucket",
+      cors: [
+        {
+          allowedOrigins: ["*"],
+          allowedHeaders: ["*"],
+          allowedMethods: [
+            s3.HttpMethods.PUT,
+            s3.HttpMethods.GET,
+            s3.HttpMethods.HEAD,
+          ],
+        },
+      ],
+      publicReadAccess: false,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      /*      autoDeleteObjects: true,
+     removalPolicy: RemovalPolicy.DESTROY, */
+    });
 
     const sharedLambdaProps: NodejsFunctionProps = {
       runtime: Runtime.NODEJS_20_X,
       environment: {
-        PRODUCT_AWS_REGION: process.env.PRODUCT_AWS_REGION ?? "eu-north-1",
+        AWS_REGION: process.env.AWS_REGION ?? "us-east-1",
         BUCKET_NAME: importServiceBucket.bucketName,
       },
     };
@@ -75,9 +89,6 @@ export class ImportServiceStack extends cdk.Stack {
       "ImportFileParserLambda",
       {
         ...sharedLambdaProps,
-        environment: {
-          PRODUCT_AWS_REGION: process.env.PRODUCT_AWS_REGION ?? "eu-north-1",
-        },
         entry: "lib/handlers/importFileParser.ts",
         functionName: "importFileParser",
       }
