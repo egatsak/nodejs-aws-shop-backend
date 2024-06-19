@@ -12,7 +12,7 @@ import { ProductServiceDatabase } from "./db/db";
 const sharedLambdaProps: NodejsFunctionProps = {
   runtime: lambda.Runtime.NODEJS_20_X,
   environment: {
-    AWS_REGION: process.env.AWS_REGION ?? "us-east-1",
+    PRODUCT_AWS_REGION: process.env.AWS_REGION ?? "us-east-1",
   },
 };
 
