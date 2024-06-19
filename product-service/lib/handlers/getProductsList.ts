@@ -1,41 +1,49 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
-import { unmarshall } from "@aws-sdk/util-dynamodb";
+import { ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { dbDocumentClient } from "../db/client";
 import { buildResponse } from "../utils";
 import { HttpError } from "../errorHandler";
-
-const dynamoDb = new DynamoDBClient({
-  region: "eu-north-1",
-});
+import type { MyScanCommandOutput } from "../db/types";
+import type { PopulatedProduct, Product, Stock } from "../types";
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
 
 export const handler = async (
-  event: APIGatewayProxyEvent
+  event?: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  console.log("Incoming: GET /products \n" + event.headers);
+  console.log("Incoming: GET /products\n" + event);
 
   try {
-    const products = (
-      await dynamoDb.send(new ScanCommand({ TableName: "Products" }))
-    )?.Items?.map((it) => unmarshall(it));
+    const [{ Items: productItems }, { Items: stockItems }] = await Promise.all([
+      (await dbDocumentClient.send(
+        new ScanCommand({
+          TableName: PRODUCTS_TABLE_NAME,
+        })
+      )) as MyScanCommandOutput<Product[]>,
 
-    const stocks = (
-      await dynamoDb.send(new ScanCommand({ TableName: "Stocks" }))
-    )?.Items?.map((it) => unmarshall(it));
+      (await dbDocumentClient.send(
+        new ScanCommand({
+          TableName: STOCKS_TABLE_NAME,
+        })
+      )) as MyScanCommandOutput<Stock[]>,
+    ]);
 
-    if (!products) {
-      throw new HttpError(404, "Products not found");
-    }
+    const availableProducts = productItems ?? [];
+    const availableStocks = stockItems ?? [];
 
-    const result = products.map((product) => {
-      const stock = stocks?.find((stock) => stock.product_id === product.id);
+    // DynamoDB doesn't support joins
+
+    const resultProducts = availableProducts.map((product) => {
+      const stock = availableStocks.find(
+        (stock) => stock.product_id === product.id
+      );
       return {
         ...product,
-        count: stock?.count || 0,
-      };
+        count: stock?.count ?? 0,
+      } satisfies PopulatedProduct;
     });
 
-    return buildResponse(200, result);
-  } catch (error: unknown) {
+    return buildResponse(200, resultProducts);
+  } catch (error) {
     const statusCode = error instanceof HttpError ? error.statusCode : 500;
 
     return buildResponse(statusCode, {

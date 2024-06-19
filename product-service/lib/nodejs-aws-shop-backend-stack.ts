@@ -1,26 +1,26 @@
-import * as cdk from "aws-cdk-lib";
+import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as apiGateway from "@aws-cdk/aws-apigatewayv2-alpha";
-import { HttpLambdaIntegration } from "@aws-cdk/aws-apigatewayv2-integrations-alpha";
-import { TableV2 } from "aws-cdk-lib/aws-dynamodb";
+import * as apiGateway from "aws-cdk-lib/aws-apigatewayv2";
+import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import {
   NodejsFunction,
   NodejsFunctionProps,
 } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
+import { ProductServiceDatabase } from "./db/db";
 
 const sharedLambdaProps: NodejsFunctionProps = {
   runtime: lambda.Runtime.NODEJS_20_X,
   environment: {
-    PRODUCT_AWS_REGION: process.env.PRODUCT_AWS_REGION ?? "eu-north-1",
+    PRODUCT_AWS_REGION: process.env.region ?? "us-east-1",
   },
 };
 
-export class NodejsAwsShopBackendStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+export class NodejsAwsShopBackendStack extends Stack {
+  constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const getProductList = new NodejsFunction(this, "GetProductsListLambda", {
+    const getProductsList = new NodejsFunction(this, "GetProductsListLambda", {
       ...sharedLambdaProps,
       functionName: "getProductsList",
       entry: "lib/handlers/getProductsList.ts",
@@ -38,22 +38,6 @@ export class NodejsAwsShopBackendStack extends cdk.Stack {
       entry: "lib/handlers/createProduct.ts",
     });
 
-    const productsTable = TableV2.fromTableName(
-      this,
-      "ProductsTable",
-      "Products"
-    );
-    const stocksTable = TableV2.fromTableName(this, "StocksTable", "Stocks");
-
-    productsTable.grantReadData(getProductList);
-    stocksTable.grantReadData(getProductList);
-
-    productsTable.grantReadData(getProductById);
-    stocksTable.grantReadData(getProductById);
-
-    productsTable.grantWriteData(createProduct);
-    stocksTable.grantWriteData(createProduct);
-
     const api = new apiGateway.HttpApi(this, "ProductApi", {
       corsPreflight: {
         allowHeaders: ["*"],
@@ -62,10 +46,18 @@ export class NodejsAwsShopBackendStack extends cdk.Stack {
       },
     });
 
+    new ProductServiceDatabase(this, "ProductServiceDatabase", {
+      lambdas: {
+        createProduct,
+        getProductById,
+        getProductsList,
+      },
+    });
+
     api.addRoutes({
       integration: new HttpLambdaIntegration(
         "GetProductsListIntegration",
-        getProductList
+        getProductsList
       ),
       path: "/products",
       methods: [apiGateway.HttpMethod.GET],
@@ -87,6 +79,10 @@ export class NodejsAwsShopBackendStack extends cdk.Stack {
       ),
       path: "/products",
       methods: [apiGateway.HttpMethod.POST],
+    });
+
+    new CfnOutput(this, "ApiUrl", {
+      value: api.url ?? "",
     });
   }
 }
