@@ -36,7 +36,7 @@ export class ImportServiceStack extends cdk.Stack {
     const sharedLambdaProps: NodejsFunctionProps = {
       runtime: Runtime.NODEJS_20_X,
       environment: {
-        AWS_REGION: process.env.AWS_REGION ?? "us-east-1",
+        PRODUCT_AWS_REGION: process.env.AWS_REGION ?? "us-east-1",
         BUCKET_NAME: importServiceBucket.bucketName,
       },
     };

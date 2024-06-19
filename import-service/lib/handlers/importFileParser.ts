@@ -25,6 +25,8 @@ export const handler = async (event: S3Event) => {
       .pipe(parse())
       .on("data", (row: string) => {
         console.log(row);
+        // Add validation!
+        // productDtoSchema.validateAsync(Joi.p(row));
       })
       .on("error", (error: Error) => {
         console.error("Error parsing CSV:", error);
