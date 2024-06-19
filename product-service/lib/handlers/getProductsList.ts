@@ -10,6 +10,8 @@ import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
 export const handler = async (
   event?: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
+  console.log("Incoming: GET /products\n" + event);
+
   try {
     const [{ Items: productItems }, { Items: stockItems }] = await Promise.all([
       (await dbDocumentClient.send(

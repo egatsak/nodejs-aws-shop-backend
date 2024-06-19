@@ -6,8 +6,8 @@ import {
   TableV2,
 } from "aws-cdk-lib/aws-dynamodb";
 import { RemovalPolicy } from "aws-cdk-lib";
-import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
 
 export interface ProductServiceDatabaseProps {
   lambdas: {

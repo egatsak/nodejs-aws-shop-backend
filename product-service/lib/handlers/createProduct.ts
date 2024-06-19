@@ -1,18 +1,18 @@
 import { randomUUID } from "node:crypto";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
+import Joi = require("joi");
 import { dbDocumentClient } from "../db/client";
 import { buildResponse } from "../utils";
 import { HttpError } from "../errorHandler";
 import { ProductDto, productDtoSchema } from "../dtos";
 import type { PopulatedProduct } from "../types";
 import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
-import Joi = require("joi");
 
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  console.log("Incoming: POST /products \n" + event.body);
+  console.log("Incoming: POST /products \n" + event);
 
   try {
     const productDto = JSON.parse(event.body ?? "") as ProductDto;
