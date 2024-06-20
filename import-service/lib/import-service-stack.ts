@@ -8,13 +8,14 @@ import {
 import { Runtime } from "aws-cdk-lib/aws-lambda";
 import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
 import { Construct } from "constructs";
+import { stageName } from "./constants";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     const importServiceBucket = new s3.Bucket(this, "ImportServiceS3Bucket", {
-      bucketName: "ImportServiceBucket",
+      bucketName: "egatsak-import-service-bucket",
       cors: [
         {
           allowedOrigins: ["*"],
@@ -26,9 +27,6 @@ export class ImportServiceStack extends cdk.Stack {
           ],
         },
       ],
-      publicReadAccess: false,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      encryption: s3.BucketEncryption.S3_MANAGED,
       /*      autoDeleteObjects: true,
      removalPolicy: RemovalPolicy.DESTROY, */
     });
@@ -62,6 +60,9 @@ export class ImportServiceStack extends cdk.Stack {
           allowHeaders: ["*"],
           allowOrigins: apiGateway.Cors.ALL_ORIGINS,
           allowMethods: apiGateway.Cors.ALL_METHODS,
+        },
+        deployOptions: {
+          stageName: stageName,
         },
       }
     );

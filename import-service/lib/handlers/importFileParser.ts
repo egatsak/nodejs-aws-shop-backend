@@ -4,16 +4,20 @@ import {
   CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  S3Client,
 } from "@aws-sdk/client-s3";
 import { parse } from "csv-parse";
 import { buildResponse } from "../utils";
-import { s3Client } from "../client";
+// import { s3Client } from "../client";
 
 export const handler = async (event: S3Event) => {
   console.log("importFileParser: ", event.Records);
 
   try {
     const s3File = event.Records[0].s3;
+    const s3Client = new S3Client({
+      region: process.env.AWS_REGION ?? "us_east_1",
+    });
     const getObjectCommandOutput = await s3Client.send(
       new GetObjectCommand({
         Bucket: s3File.bucket.name,

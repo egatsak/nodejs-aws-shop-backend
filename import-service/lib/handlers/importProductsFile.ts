@@ -13,12 +13,12 @@ export const handler = async function (event: APIGatewayEvent) {
     const { name } = event.queryStringParameters;
 
     const presignedPost = await createPresignedPost(s3Client, {
-      Bucket: process.env.BUCKET_NAME ?? "",
+      Bucket: process.env.BUCKET_NAME ?? "egatsak-import-service-bucket",
       Key: `uploaded/${name}`,
       Fields: {
         "Content-Type": "text/csv",
       },
-      Expires: 120,
+      Expires: 2400,
     });
 
     return buildResponse(200, {
