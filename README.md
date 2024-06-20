@@ -8,7 +8,7 @@ Frontend part deployed at AWS CloudFront is connected to the API built using AWS
 
 ### CloudFront
 
-[Frontend App deploy link](https://d1svs9tsn43rrf.cloudfront.net/)
+[Frontend App deploy link](https://dosfklikrk6wd.cloudfront.net/)
 
 ### API
 

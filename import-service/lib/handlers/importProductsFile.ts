@@ -1,7 +1,8 @@
 import { APIGatewayEvent } from "aws-lambda";
-import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { s3Client } from "../client";
 import { buildResponse } from "../utils";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export const handler = async function (event: APIGatewayEvent) {
   console.log("importProductsFile: ", event);
@@ -12,18 +13,16 @@ export const handler = async function (event: APIGatewayEvent) {
     }
     const { name } = event.queryStringParameters;
 
-    const presignedPost = await createPresignedPost(s3Client, {
+    const putObjCommand = new PutObjectCommand({
       Bucket: process.env.BUCKET_NAME ?? "egatsak-import-service-bucket",
       Key: `uploaded/${name}`,
-      Fields: {
-        "Content-Type": "text/csv",
-      },
-      Expires: 2400,
+    });
+    const signedUrl = await getSignedUrl(s3Client, putObjCommand, {
+      expiresIn: 120,
     });
 
     return buildResponse(200, {
-      uploadUrl: presignedPost.url,
-      fields: presignedPost.fields,
+      uploadUrl: signedUrl,
     });
   } catch (error: any) {
     const statusCode = error.statusCode ?? 500;
