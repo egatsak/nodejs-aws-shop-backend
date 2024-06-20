@@ -9,9 +9,9 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "cdk:bootstrap": "npx cdk bootstrap --profile my-admin-profile",
-    "cdk:deploy": "cdk deploy --profile my-admin-profile",
-    "cdk:destroy": "cdk destroy --profile my-admin-profile"
+    "cdk:bootstrap": "npx cdk bootstrap --profile admin",
+    "cdk:deploy": "cdk deploy --profile admin",
+    "cdk:destroy": "cdk destroy --profile admin"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.138",
