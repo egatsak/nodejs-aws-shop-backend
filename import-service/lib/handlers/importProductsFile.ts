@@ -1,22 +1,34 @@
 import { APIGatewayEvent } from "aws-lambda";
-import { s3Client } from "../client";
 import { buildResponse } from "../utils";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { HttpError } from "../errorHandler";
 
 export const handler = async function (event: APIGatewayEvent) {
-  console.log("importProductsFile: ", event);
+  console.log("importProductsFile: ", {
+    body: event.body,
+    headers: event.headers,
+    httpMethod: event.httpMethod,
+    pathParameters: event.pathParameters,
+    path: event.path,
+  });
 
   try {
     if (!event.queryStringParameters) {
-      return buildResponse(400, { message: "Please provide queryString" });
+      throw new HttpError(400, "Please provide queryString");
     }
+
+    const s3Client = new S3Client({
+      region: process.env.AWS_REGION ?? "us-east-1",
+    });
+
     const { name } = event.queryStringParameters;
 
     const putObjCommand = new PutObjectCommand({
       Bucket: process.env.BUCKET_NAME ?? "egatsak-import-service-bucket",
       Key: `uploaded/${name}`,
     });
+
     const signedUrl = await getSignedUrl(s3Client, putObjCommand, {
       expiresIn: 120,
     });
@@ -24,8 +36,8 @@ export const handler = async function (event: APIGatewayEvent) {
     return buildResponse(200, {
       uploadUrl: signedUrl,
     });
-  } catch (error: any) {
-    const statusCode = error.statusCode ?? 500;
+  } catch (error) {
+    const statusCode = error instanceof HttpError ? error.statusCode : 500;
 
     return buildResponse(statusCode, {
       message: error instanceof Error ? error.message : "Smth went wrong",
