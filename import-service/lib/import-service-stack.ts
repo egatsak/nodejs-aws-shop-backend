@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
-import * as apiGateway from "aws-cdk-lib/aws-apigateway";
+import * as apiGateway from "aws-cdk-lib/aws-apigatewayv2";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import {
   NodejsFunction,
   NodejsFunctionProps,
@@ -8,13 +9,7 @@ import {
 import { Runtime } from "aws-cdk-lib/aws-lambda";
 import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
 import { Construct } from "constructs";
-import { stageName } from "./constants";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
-import { JsonSchemaType, Model } from "aws-cdk-lib/aws-apigateway";
-import {
-  Distribution,
-  ResponseHeadersPolicy,
-} from "aws-cdk-lib/aws-cloudfront";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -95,146 +90,27 @@ export class ImportServiceStack extends cdk.Stack {
 
     importServiceBucket.grantReadWrite(importProductsFileFunction);
 
-    const importsApiGateway = new apiGateway.RestApi(
+    const importsApiGateway = new apiGateway.HttpApi(
       this,
-      "ImportsApiGateway",
+      "ImportsHttpApiGateway",
       {
-        restApiName: "Import Service",
-        defaultCorsPreflightOptions: {
+        apiName: "ImportServiceHttpApi",
+        corsPreflight: {
           allowHeaders: ["*"],
           allowOrigins: ["*"],
-          allowMethods: apiGateway.Cors.ALL_METHODS,
-          exposeHeaders: [
-            "Access-Control-Allow-Origin",
-            "Access-Control-Allow-Methods",
-            "Access-Control-Allow-Headers",
-          ],
+          allowMethods: [apiGateway.CorsHttpMethod.ANY],
         },
-        deployOptions: {
-          stageName: stageName,
-        },
+        createDefaultStage: true,
       }
     );
 
-    const lambdaIntegration = new apiGateway.LambdaIntegration(
-      importProductsFileFunction,
-      {
-        requestParameters: {
-          "integration.request.querystring.name":
-            "method.request.querystring.name",
-        },
-        /* integrationResponses: [
-          {
-            statusCode: "200",
-            responseTemplates: {
-              "application/json": '{"message": "Hello World!"}',
-            },
-            responseParameters: {
-              // 👇 allow CORS for all origins
-              "method.response.header.Access-Control-Allow-Origin": "'*'",
-              "method.response.header.Access-Control-Allow-Headers":
-                "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
-              "method.response.header.Access-Control-Allow-Methods":
-                "'OPTIONS,GET,PUT,POST,DELETE'",
-            },
-          },
-          {
-            statusCode: "400",
-               responseTemplates: {
-              "application/json": '{"message": "Hello World!"}',
-            }, 
-            responseParameters: {
-              // 👇 allow CORS for all origins
-              "method.response.header.Access-Control-Allow-Origin": "'*'",
-              "method.response.header.Access-Control-Allow-Headers":
-                "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
-              "method.response.header.Access-Control-Allow-Methods":
-                "'OPTIONS,GET,PUT,POST,DELETE'",
-            },
-          },
-        ],
-        requestTemplates: {
-          "application/json": '{"statusCode": 200}',
-        }, */
-      }
-    );
-
-    const resource = importsApiGateway.root.addResource("import", {
-      defaultCorsPreflightOptions: {
-        allowOrigins: ["*"],
-        allowHeaders: ["*"],
-        allowMethods: apiGateway.Cors.ALL_METHODS,
-        exposeHeaders: [
-          "Access-Control-Allow-Origin",
-          "Access-Control-Allow-Methods",
-          "Access-Control-Allow-Headers",
-        ],
-      },
-    });
-
-    const importProductsModel = new Model(this, "ImportProductsModel", {
-      restApi: importsApiGateway,
-      contentType: "application/json",
-      modelName: "ImportProductsModel",
-      schema: {
-        title: "SignedUrl",
-        type: JsonSchemaType.OBJECT,
-        properties: {
-          uploadUrl: { type: JsonSchemaType.STRING },
-        },
-        required: ["uploadUrl"],
-      },
-    });
-
-    const importProductsErrorModel = new Model(
-      this,
-      "ImportProductsErrorModel",
-      {
-        restApi: importsApiGateway,
-        contentType: "application/json",
-        modelName: "ImportProductsErrorModel",
-        schema: {
-          title: "Error",
-          type: JsonSchemaType.OBJECT,
-          properties: {
-            message: { type: JsonSchemaType.STRING },
-          },
-          required: ["message"],
-        },
-      }
-    );
-
-    resource.addMethod("GET", lambdaIntegration, {
-      requestParameters: {
-        "method.request.querystring.name": true,
-      },
-
-      methodResponses: [
-        {
-          statusCode: "200",
-          responseModels: {
-            "application/json": importProductsModel,
-          },
-          responseParameters: {
-            // 👇 allow CORS for all origins
-            "method.response.header.Access-Control-Allow-Origin": true,
-            "method.response.header.Access-Control-Allow-Headers": true,
-            "method.response.header.Access-Control-Allow-Methods": true,
-          },
-        },
-        {
-          statusCode: "400",
-          responseModels: {
-            "application/json": importProductsErrorModel,
-          },
-          responseParameters: {
-            // 👇 allow CORS for all origins
-            "method.response.header.Access-Control-Allow-Origin": true,
-            "method.response.header.Access-Control-Allow-Headers": true,
-            "method.response.header.Access-Control-Allow-Methods": true,
-          },
-        },
-      ],
+    importsApiGateway.addRoutes({
+      integration: new HttpLambdaIntegration(
+        "ImportServiceLambdaIntegration",
+        importProductsFileFunction
+      ),
+      path: "/import",
+      methods: [apiGateway.HttpMethod.GET],
     });
 
     const importFileParserFunction = new NodejsFunction(
@@ -247,8 +123,6 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
-    importFileParserFunction.addToRolePolicy(bucketParsedPolicy);
-
     importServiceBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
       new LambdaDestination(importFileParserFunction),
@@ -258,6 +132,7 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
+    importFileParserFunction.addToRolePolicy(bucketParsedPolicy);
     importServiceBucket.grantReadWrite(importFileParserFunction);
   }
 }
