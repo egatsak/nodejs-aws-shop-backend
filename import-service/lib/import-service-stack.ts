@@ -2,14 +2,14 @@ import * as cdk from "aws-cdk-lib";
 import * as apiGateway from "aws-cdk-lib/aws-apigatewayv2";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import { Runtime } from "aws-cdk-lib/aws-lambda";
 import {
   NodejsFunction,
   NodejsFunctionProps,
 } from "aws-cdk-lib/aws-lambda-nodejs";
-import { Runtime } from "aws-cdk-lib/aws-lambda";
 import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
-import { Construct } from "constructs";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
+import { Construct } from "constructs";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -38,23 +38,6 @@ export class ImportServiceStack extends cdk.Stack {
       /*      autoDeleteObjects: true,
      removalPolicy: RemovalPolicy.DESTROY, */
     });
-
-    /* importServiceBucket.addCorsRule({
-      allowedOrigins: ["*"],
-      allowedHeaders: ["*"],
-      allowedMethods: [
-        s3.HttpMethods.DELETE,
-        s3.HttpMethods.GET,
-        s3.HttpMethods.HEAD,
-        s3.HttpMethods.POST,
-        s3.HttpMethods.PUT,
-      ],
-      exposedHeaders: [
-        "Access-Control-Allow-Origin",
-        "Access-Control-Allow-Methods",
-        "Access-Control-Allow-Headers",
-      ],
-    }); */
 
     const bucketUploadedPolicy = new PolicyStatement({
       actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
@@ -86,10 +69,6 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
-    importProductsFileFunction.addToRolePolicy(bucketUploadedPolicy);
-
-    importServiceBucket.grantReadWrite(importProductsFileFunction);
-
     const importsApiGateway = new apiGateway.HttpApi(
       this,
       "ImportsHttpApiGateway",
@@ -99,18 +78,23 @@ export class ImportServiceStack extends cdk.Stack {
           allowHeaders: ["*"],
           allowOrigins: ["*"],
           allowMethods: [apiGateway.CorsHttpMethod.ANY],
+          exposeHeaders: [
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Methods",
+            "Access-Control-Allow-Headers",
+          ],
         },
-        createDefaultStage: true,
+        createDefaultStage: false,
       }
     );
 
     importsApiGateway.addRoutes({
+      path: "/import",
+      methods: [apiGateway.HttpMethod.GET],
       integration: new HttpLambdaIntegration(
         "ImportServiceLambdaIntegration",
         importProductsFileFunction
       ),
-      path: "/import",
-      methods: [apiGateway.HttpMethod.GET],
     });
 
     const importFileParserFunction = new NodejsFunction(
@@ -132,7 +116,23 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
+    importProductsFileFunction.addToRolePolicy(bucketUploadedPolicy);
     importFileParserFunction.addToRolePolicy(bucketParsedPolicy);
+    importServiceBucket.grantReadWrite(importProductsFileFunction);
     importServiceBucket.grantReadWrite(importFileParserFunction);
+
+    const devStage = new apiGateway.HttpStage(
+      this,
+      "ImportsHttpApiGatewayDevStage",
+      {
+        httpApi: importsApiGateway,
+        stageName: "dev",
+        autoDeploy: true,
+      }
+    );
+
+    new cdk.CfnOutput(this, "ApiUrl", {
+      value: devStage.url ?? "",
+    });
   }
 }
