@@ -15,7 +15,7 @@ export const handler = async function (event: APIGatewayEvent) {
 
   try {
     if (!event.queryStringParameters) {
-      throw new HttpError(400, "Please provide queryString");
+      throw new HttpError(400, "Please provide queryString.");
     }
 
     const s3Client = new S3Client({
@@ -23,6 +23,10 @@ export const handler = async function (event: APIGatewayEvent) {
     });
 
     const { name } = event.queryStringParameters;
+
+    if (!name?.endsWith(".csv")) {
+      throw new HttpError(400, "Please upload valid CSV file.");
+    }
 
     const putObjCommand = new PutObjectCommand({
       Bucket: process.env.BUCKET_NAME ?? "egatsak-import-service-bucket",
