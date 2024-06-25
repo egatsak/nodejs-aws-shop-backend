@@ -11,6 +11,7 @@ export const handler = async function (event: APIGatewayEvent) {
     httpMethod: event.httpMethod,
     pathParameters: event.pathParameters,
     path: event.path,
+    queryStringParameters: event.queryStringParameters,
   });
 
   try {
