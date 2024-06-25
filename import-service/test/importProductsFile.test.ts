@@ -2,7 +2,6 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { handler } from "../lib/handlers/importProductsFile";
 import { buildResponse } from "../lib/utils";
 
-jest.mock("@aws-sdk/client-s3");
 jest.mock("@aws-sdk/s3-request-presigner", () => ({
   getSignedUrl: jest.fn(),
 }));

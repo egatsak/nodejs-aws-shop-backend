@@ -6,12 +6,12 @@ import { HttpError } from "../errorHandler";
 
 export const handler = async function (event: APIGatewayEvent) {
   console.log("importProductsFile: ", {
-    body: event.body,
-    headers: event.headers,
-    httpMethod: event.httpMethod,
-    pathParameters: event.pathParameters,
-    path: event.path,
-    queryStringParameters: event.queryStringParameters,
+    body: event?.body,
+    headers: event?.headers,
+    httpMethod: event?.httpMethod,
+    pathParameters: event?.pathParameters,
+    path: event?.path,
+    queryStringParameters: event?.queryStringParameters,
   });
 
   try {
