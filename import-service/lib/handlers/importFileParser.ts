@@ -59,7 +59,7 @@ export const handler = async (event: S3Event) => {
       throw new Error("Error while copying object!");
     }
 
-    const deleteResult = await s3Client.send(
+    await s3Client.send(
       new DeleteObjectCommand({
         Bucket: s3File.bucket.name,
         Key: s3File.object.key,
@@ -71,7 +71,6 @@ export const handler = async (event: S3Event) => {
     });
   } catch (error: any) {
     const statusCode = error.statusCode ?? 500;
-
     return buildResponse(statusCode, {
       message: error instanceof Error ? error.message : "Smth went wrong",
     });
