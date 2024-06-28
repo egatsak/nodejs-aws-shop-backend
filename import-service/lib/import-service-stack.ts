@@ -85,6 +85,12 @@ export class ImportServiceStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY
     });
 
+    const sqsImportPolicy = new PolicyStatement({
+      actions: ["sqs:SendMessage"],
+      resources: [catalogItemsQueue.queueArn],
+      effect: Effect.ALLOW
+    });
+
     const importFileParserFunction = new NodejsFunction(this, "ImportFileParserLambda", {
       ...sharedLambdaProps,
       entry: "lib/handlers/importFileParser.ts",
@@ -103,6 +109,7 @@ export class ImportServiceStack extends cdk.Stack {
 
     importProductsFileFunction.addToRolePolicy(bucketUploadedPolicy);
     importFileParserFunction.addToRolePolicy(bucketParsedPolicy);
+    importFileParserFunction.addToRolePolicy(sqsImportPolicy);
     importServiceBucket.grantReadWrite(importProductsFileFunction);
     importServiceBucket.grantReadWrite(importFileParserFunction);
 
