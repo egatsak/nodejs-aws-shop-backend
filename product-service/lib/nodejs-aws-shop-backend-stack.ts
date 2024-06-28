@@ -1,4 +1,4 @@
-import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
+import { CfnOutput, Fn, Stack, StackProps } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apiGateway from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
@@ -8,6 +8,13 @@ import {
 } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
 import { ProductServiceDatabase } from "./db/db";
+import {
+  IMPORT_PRODUCTS_SQS_ARN,
+  IMPORT_PRODUCTS_SQS_URL,
+} from "../../constants";
+import { Queue } from "aws-cdk-lib/aws-sqs";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import { IMPORT_PRODUCTS_SQS_BATCH_SIZE } from "./constants";
 
 const sharedLambdaProps: NodejsFunctionProps = {
   runtime: lambda.Runtime.NODEJS_20_X,
@@ -19,6 +26,15 @@ const sharedLambdaProps: NodejsFunctionProps = {
 export class NodejsAwsShopBackendStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+
+    const productsSqsUrl = Fn.importValue(IMPORT_PRODUCTS_SQS_URL);
+    const productsSqsArn = Fn.importValue(IMPORT_PRODUCTS_SQS_ARN);
+
+    const catalogItemsQueueImported = Queue.fromQueueArn(
+      this,
+      "ImportedImportProductsQueue",
+      productsSqsArn
+    );
 
     const getProductsList = new NodejsFunction(this, "GetProductsListLambda", {
       ...sharedLambdaProps,
@@ -37,6 +53,26 @@ export class NodejsAwsShopBackendStack extends Stack {
       functionName: "createProduct",
       entry: "lib/handlers/createProduct.ts",
     });
+
+    const catalogBatchProcess = new NodejsFunction(
+      this,
+      "CatalogBatchProcessLambda",
+      {
+        ...sharedLambdaProps,
+        functionName: "catalogBatchProcess",
+        entry: "lib/handlers/catalogBatchProcess.ts",
+        environment: {
+          ...sharedLambdaProps.environment,
+          PRODUCT_SQS_URL: catalogItemsQueueImported.queueUrl,
+        },
+      }
+    );
+
+    catalogBatchProcess.addEventSource(
+      new SqsEventSource(catalogItemsQueueImported, {
+        batchSize: IMPORT_PRODUCTS_SQS_BATCH_SIZE,
+      })
+    );
 
     const api = new apiGateway.HttpApi(this, "ProductApi", {
       corsPreflight: {
