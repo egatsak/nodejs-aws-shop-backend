@@ -1,15 +1,14 @@
 import * as cdk from "aws-cdk-lib";
 import * as apiGateway from "aws-cdk-lib/aws-apigatewayv2";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
-import { Runtime } from "aws-cdk-lib/aws-lambda";
-import {
-  NodejsFunction,
-  NodejsFunctionProps,
-} from "aws-cdk-lib/aws-lambda-nodejs";
-import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
-import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
-import { Construct } from "constructs";
+import {HttpLambdaIntegration} from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import {Runtime} from "aws-cdk-lib/aws-lambda";
+import {NodejsFunction, NodejsFunctionProps} from "aws-cdk-lib/aws-lambda-nodejs";
+import {LambdaDestination} from "aws-cdk-lib/aws-s3-notifications";
+import {Effect, PolicyStatement} from "aws-cdk-lib/aws-iam";
+import {Construct} from "constructs";
+import {Queue} from "aws-cdk-lib/aws-sqs";
+import {IMPORT_PRODUCTS_SQS_ARN, IMPORT_PRODUCTS_SQS_URL} from "../../constants";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -26,15 +25,15 @@ export class ImportServiceStack extends cdk.Stack {
             s3.HttpMethods.GET,
             s3.HttpMethods.HEAD,
             s3.HttpMethods.POST,
-            s3.HttpMethods.PUT,
+            s3.HttpMethods.PUT
           ],
           exposedHeaders: [
             "Access-Control-Allow-Origin",
             "Access-Control-Allow-Methods",
-            "Access-Control-Allow-Headers",
-          ],
-        },
-      ],
+            "Access-Control-Allow-Headers"
+          ]
+        }
+      ]
       /*      autoDeleteObjects: true,
      removalPolicy: RemovalPolicy.DESTROY, */
     });
@@ -42,77 +41,63 @@ export class ImportServiceStack extends cdk.Stack {
     const bucketUploadedPolicy = new PolicyStatement({
       actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
       resources: [importServiceBucket.arnForObjects(`uploaded/*`)],
-      effect: Effect.ALLOW,
+      effect: Effect.ALLOW
     });
 
     const bucketParsedPolicy = new PolicyStatement({
       actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
       resources: [importServiceBucket.arnForObjects(`parsed/*`)],
-      effect: Effect.ALLOW,
+      effect: Effect.ALLOW
     });
 
     const sharedLambdaProps: NodejsFunctionProps = {
       runtime: Runtime.NODEJS_20_X,
       environment: {
         PRODUCT_AWS_REGION: process.env.AWS_REGION ?? "us-east-1",
-        BUCKET_NAME: importServiceBucket.bucketName,
-      },
+        BUCKET_NAME: importServiceBucket.bucketName
+      }
     };
 
-    const importProductsFileFunction = new NodejsFunction(
-      this,
-      "ImportProductsFileLambda",
-      {
-        ...sharedLambdaProps,
-        entry: "lib/handlers/importProductsFile.ts",
-        functionName: "importProductsFile",
-      }
-    );
+    const importProductsFileFunction = new NodejsFunction(this, "ImportProductsFileLambda", {
+      ...sharedLambdaProps,
+      entry: "lib/handlers/importProductsFile.ts",
+      functionName: "importProductsFile"
+    });
 
-    const importsApiGateway = new apiGateway.HttpApi(
-      this,
-      "ImportsHttpApiGateway",
-      {
-        apiName: "ImportServiceHttpApi",
-        corsPreflight: {
-          allowHeaders: ["*"],
-          allowOrigins: ["*"],
-          allowMethods: [apiGateway.CorsHttpMethod.ANY],
-          exposeHeaders: [
-            "Access-Control-Allow-Origin",
-            "Access-Control-Allow-Methods",
-            "Access-Control-Allow-Headers",
-          ],
-        },
-        createDefaultStage: false,
-      }
-    );
+    const importsApiGateway = new apiGateway.HttpApi(this, "ImportsHttpApiGateway", {
+      apiName: "ImportServiceHttpApi",
+      corsPreflight: {
+        allowHeaders: ["*"],
+        allowOrigins: ["*"],
+        allowMethods: [apiGateway.CorsHttpMethod.ANY],
+        exposeHeaders: ["Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"]
+      },
+      createDefaultStage: false
+    });
 
     importsApiGateway.addRoutes({
       path: "/import",
       methods: [apiGateway.HttpMethod.GET],
-      integration: new HttpLambdaIntegration(
-        "ImportServiceLambdaIntegration",
-        importProductsFileFunction
-      ),
+      integration: new HttpLambdaIntegration("ImportServiceLambdaIntegration", importProductsFileFunction)
     });
 
-    const importFileParserFunction = new NodejsFunction(
-      this,
-      "ImportFileParserLambda",
-      {
-        ...sharedLambdaProps,
-        entry: "lib/handlers/importFileParser.ts",
-        functionName: "importFileParser",
-      }
-    );
+    const catalogItemsQueue = new Queue(this, "ImportProductsQueue", {
+      removalPolicy: cdk.RemovalPolicy.DESTROY
+    });
+
+    const importFileParserFunction = new NodejsFunction(this, "ImportFileParserLambda", {
+      ...sharedLambdaProps,
+      entry: "lib/handlers/importFileParser.ts",
+      functionName: "importFileParser",
+      environment: {...sharedLambdaProps.environment, PRODUCT_SQS_URL: catalogItemsQueue.queueUrl}
+    });
 
     importServiceBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
       new LambdaDestination(importFileParserFunction),
       {
         prefix: "uploaded/",
-        suffix: "csv",
+        suffix: "csv"
       }
     );
 
@@ -121,18 +106,24 @@ export class ImportServiceStack extends cdk.Stack {
     importServiceBucket.grantReadWrite(importProductsFileFunction);
     importServiceBucket.grantReadWrite(importFileParserFunction);
 
-    const devStage = new apiGateway.HttpStage(
-      this,
-      "ImportsHttpApiGatewayDevStage",
-      {
-        httpApi: importsApiGateway,
-        stageName: "dev",
-        autoDeploy: true,
-      }
-    );
+    const devStage = new apiGateway.HttpStage(this, "ImportsHttpApiGatewayDevStage", {
+      httpApi: importsApiGateway,
+      stageName: "dev",
+      autoDeploy: true
+    });
 
     new cdk.CfnOutput(this, "ApiUrl", {
-      value: devStage.url ?? "",
+      value: devStage.url ?? ""
+    });
+
+    new cdk.CfnOutput(this, "ImportProductsQueueUrl", {
+      value: catalogItemsQueue.queueUrl,
+      exportName: IMPORT_PRODUCTS_SQS_URL
+    });
+
+    new cdk.CfnOutput(this, "ImportProductsQueueArn", {
+      value: catalogItemsQueue.queueArn,
+      exportName: IMPORT_PRODUCTS_SQS_ARN
     });
   }
 }
