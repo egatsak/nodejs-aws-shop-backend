@@ -14,6 +14,7 @@ export interface ProductServiceDatabaseProps {
     getProductsList: NodejsFunction;
     getProductById: NodejsFunction;
     createProduct: NodejsFunction;
+    catalogBatchProcess: NodejsFunction;
   };
 }
 
@@ -25,7 +26,12 @@ export class ProductServiceDatabase extends Construct {
   ) {
     super(scope, id);
 
-    const { getProductsList, getProductById, createProduct } = props.lambdas;
+    const {
+      getProductsList,
+      getProductById,
+      createProduct,
+      catalogBatchProcess,
+    } = props.lambdas;
 
     const productsTable = new TableV2(this, "Products", {
       tableName: PRODUCTS_TABLE_NAME,
@@ -36,6 +42,7 @@ export class ProductServiceDatabase extends Construct {
       billing: Billing.onDemand(),
     });
     productsTable.grantWriteData(createProduct);
+    productsTable.grantWriteData(catalogBatchProcess);
     productsTable.grantReadData(getProductById);
     productsTable.grantReadData(getProductsList);
 
@@ -48,6 +55,7 @@ export class ProductServiceDatabase extends Construct {
     });
 
     stocksTable.grantWriteData(createProduct);
+    stocksTable.grantWriteData(catalogBatchProcess);
     stocksTable.grantReadData(getProductById);
     stocksTable.grantReadData(getProductsList);
   }

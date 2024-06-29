@@ -87,6 +87,7 @@ export class NodejsAwsShopBackendStack extends Stack {
         createProduct,
         getProductById,
         getProductsList,
+        catalogBatchProcess,
       },
     });
 

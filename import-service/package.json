@@ -16,7 +16,7 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.138",
     "@types/jest": "^29.5.8",
-    "@types/node": "^20.9.0",
+    "@types/node": "^20.14.9",
     "@types/source-map-support": "^0.5.10",
     "aws-cdk": "2.145.0",
     "aws-sdk-client-mock": "^4.0.1",
