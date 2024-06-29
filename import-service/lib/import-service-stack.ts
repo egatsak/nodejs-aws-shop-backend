@@ -40,8 +40,8 @@ export class ImportServiceStack extends cdk.Stack {
           ],
         },
       ],
-      /*      autoDeleteObjects: true,
-     removalPolicy: RemovalPolicy.DESTROY, */
+      autoDeleteObjects: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const bucketUploadedPolicy = new PolicyStatement({

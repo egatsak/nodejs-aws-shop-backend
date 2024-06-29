@@ -75,11 +75,13 @@ export class NodejsAwsShopBackendStack extends Stack {
     );
 
     const api = new apiGateway.HttpApi(this, "ProductApi", {
+      apiName: "ProductServiceHttpApi",
       corsPreflight: {
         allowHeaders: ["*"],
         allowOrigins: ["*"],
         allowMethods: [apiGateway.CorsHttpMethod.ANY],
       },
+      createDefaultStage: false,
     });
 
     new ProductServiceDatabase(this, "ProductServiceDatabase", {
@@ -118,8 +120,18 @@ export class NodejsAwsShopBackendStack extends Stack {
       methods: [apiGateway.HttpMethod.POST],
     });
 
+    const devStage = new apiGateway.HttpStage(
+      this,
+      "ProductHttpApiGatewayDevStage",
+      {
+        httpApi: api,
+        stageName: "dev",
+        autoDeploy: true,
+      }
+    );
+
     new CfnOutput(this, "ApiUrl", {
-      value: api.url ?? "",
+      value: devStage.url ?? "",
     });
   }
 }
