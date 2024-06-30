@@ -4,9 +4,10 @@ import {
   TransactWriteCommandInput,
 } from "@aws-sdk/lib-dynamodb";
 import { SQSEvent } from "aws-lambda";
-import { ProductDto } from "../dtos";
 import { dbDocumentClient } from "../db/client";
 import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
+import type { ProductDto } from "../dtos";
+import type { Product, Stock } from "../types";
 
 export const handler = async (event: SQSEvent) => {
   console.log(`Products: ${event.Records}`);
@@ -38,7 +39,7 @@ export const handler = async (event: SQSEvent) => {
               Item: {
                 ...product,
                 id: productId,
-              },
+              } satisfies Product,
             },
           },
           {
@@ -47,7 +48,7 @@ export const handler = async (event: SQSEvent) => {
               Item: {
                 product_id: productId,
                 count,
-              },
+              } satisfies Stock,
             },
           },
         ];
