@@ -8,11 +8,10 @@ import {
 } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
 import { ProductServiceDatabase } from "./db/db";
-import {
-  IMPORT_PRODUCTS_SQS_ARN,
-  IMPORT_PRODUCTS_SQS_URL,
-} from "../../constants";
+import { IMPORT_PRODUCTS_SQS_ARN } from "../../constants";
 import { Queue } from "aws-cdk-lib/aws-sqs";
+import { Subscription, SubscriptionProtocol, Topic } from "aws-cdk-lib/aws-sns";
+import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import { IMPORT_PRODUCTS_SQS_BATCH_SIZE } from "./constants";
 
@@ -27,7 +26,7 @@ export class NodejsAwsShopBackendStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const productsSqsUrl = Fn.importValue(IMPORT_PRODUCTS_SQS_URL);
+    // SQS & SNS
     const productsSqsArn = Fn.importValue(IMPORT_PRODUCTS_SQS_ARN);
 
     const catalogItemsQueueImported = Queue.fromQueueArn(
@@ -36,6 +35,11 @@ export class NodejsAwsShopBackendStack extends Stack {
       productsSqsArn
     );
 
+    const createProductTopic = new Topic(this, "CreateProductTopic", {
+      topicName: "CreateProductTopic",
+    });
+
+    // Lambdas
     const getProductsList = new NodejsFunction(this, "GetProductsListLambda", {
       ...sharedLambdaProps,
       functionName: "getProductsList",
@@ -62,11 +66,22 @@ export class NodejsAwsShopBackendStack extends Stack {
         functionName: "catalogBatchProcess",
         entry: "lib/handlers/catalogBatchProcess.ts",
         environment: {
-          ...sharedLambdaProps.environment,
-          PRODUCT_SQS_URL: catalogItemsQueueImported.queueUrl,
+          SNS_TOPIC_ARN: createProductTopic.topicArn,
         },
       }
     );
+
+    // DynamoDB
+    new ProductServiceDatabase(this, "ProductServiceDatabase", {
+      lambdas: {
+        createProduct,
+        getProductById,
+        getProductsList,
+        catalogBatchProcess,
+      },
+    });
+
+    // Subscriptions
 
     catalogBatchProcess.addEventSource(
       new SqsEventSource(catalogItemsQueueImported, {
@@ -74,6 +89,17 @@ export class NodejsAwsShopBackendStack extends Stack {
       })
     );
 
+    const createProductTopicSubscription = new Subscription(
+      this,
+      "CreateProductTopicSubscription",
+      {
+        endpoint: process.env.SNS_SUBSCRIBE_EMAIL ?? "",
+        protocol: SubscriptionProtocol.EMAIL,
+        topic: createProductTopic,
+      }
+    );
+
+    // ApiGateway
     const api = new apiGateway.HttpApi(this, "ProductApi", {
       apiName: "ProductServiceHttpApi",
       corsPreflight: {
@@ -82,15 +108,6 @@ export class NodejsAwsShopBackendStack extends Stack {
         allowMethods: [apiGateway.CorsHttpMethod.ANY],
       },
       createDefaultStage: false,
-    });
-
-    new ProductServiceDatabase(this, "ProductServiceDatabase", {
-      lambdas: {
-        createProduct,
-        getProductById,
-        getProductsList,
-        catalogBatchProcess,
-      },
     });
 
     api.addRoutes({
@@ -120,6 +137,16 @@ export class NodejsAwsShopBackendStack extends Stack {
       methods: [apiGateway.HttpMethod.POST],
     });
 
+    // Policies
+    catalogBatchProcess.addToRolePolicy(
+      new PolicyStatement({
+        actions: ["sns:Publish"],
+        resources: [createProductTopic.topicArn],
+        effect: Effect.ALLOW,
+      })
+    );
+
+    // Deploy stage
     const devStage = new apiGateway.HttpStage(
       this,
       "ProductHttpApiGatewayDevStage",

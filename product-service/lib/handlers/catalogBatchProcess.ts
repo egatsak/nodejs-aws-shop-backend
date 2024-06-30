@@ -3,6 +3,7 @@ import {
   TransactWriteCommand,
   TransactWriteCommandInput,
 } from "@aws-sdk/lib-dynamodb";
+import { PublishCommand, SNSClient } from "@aws-sdk/client-sns";
 import { SQSEvent } from "aws-lambda";
 import { dbDocumentClient } from "../db/client";
 import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../constants";
@@ -13,6 +14,8 @@ export const handler = async (event: SQSEvent) => {
   console.log(`Products: ${event.Records}`);
 
   const products: ProductDto[] = [];
+
+  const snsClient = new SNSClient();
 
   try {
     // parse products from SQS
@@ -59,6 +62,17 @@ export const handler = async (event: SQSEvent) => {
         TransactItems: createProductsTransactionPayload.flat(),
       })
     );
+
+    // SNS
+    const snsResult = await snsClient.send(
+      new PublishCommand({
+        TopicArn: process.env.SNS_TOPIC_ARN ?? "",
+        Subject: `New products from CSV parse have been added to DB successfully.`,
+        Message: `Products:\n${JSON.stringify(products)}`,
+      })
+    );
+
+    // TODO: add SNS result check
   } catch (e) {
     console.log(`catalogBatchProcess failed`);
     console.log(e);
