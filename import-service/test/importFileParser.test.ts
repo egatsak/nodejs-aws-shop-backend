@@ -1,4 +1,4 @@
-import path from "node:path";
+import * as path from "node:path";
 import { createReadStream } from "node:fs";
 import { S3Event, S3EventRecord } from "aws-lambda";
 import {

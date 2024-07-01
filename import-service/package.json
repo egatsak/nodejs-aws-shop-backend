@@ -1,6 +1,6 @@
 {
   "name": "import-service",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "bin": {
     "import-service": "bin/import-service.js"
   },

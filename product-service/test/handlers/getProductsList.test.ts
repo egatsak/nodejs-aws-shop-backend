@@ -1,44 +1,77 @@
 import { APIGatewayProxyEvent } from "aws-lambda";
-import { products } from "../../lib/db/db";
-import { buildResponse } from "../../lib/utils";
-import { HttpError } from "../../lib/errorHandler";
+import { mockClient } from "aws-sdk-client-mock";
+import { ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { dbDocumentClient } from "../../lib/db/client";
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../../lib/constants";
 import { handler } from "../../lib/handlers/getProductsList";
+import { buildResponse } from "../../lib/utils";
+import type { Product, Stock } from "../../lib/types";
 
-// Mocking the necessary modules
-jest.mock("../../lib/db/db", () => ({
-  products: [
-    {
-      id: "855e9a53-dd3c-46b8-8cb1-329f133146f6",
-      description: "Short Product Description1",
-      price: 24,
-      title: "ProductOne",
-    },
-    {
-      id: "d5c67566-72ff-4f1e-b4f0-ecc9b84b2b40",
-      description: "Short Product Description7",
-      price: 15,
-      title: "ProductTitle",
-    },
-    {
-      id: "a5116cf4-9915-4a91-8424-14dc3d5e6cb2",
-      description: "Short Product Description2",
-      price: 23,
-      title: "Product",
-    },
-  ],
-}));
+const ddbMock = mockClient(dbDocumentClient);
+jest.mock("../../lib/utils");
 
-jest.mock("../../lib/utils.ts", () => ({
-  buildResponse: jest.fn(),
-}));
-
-describe("getProductsListLambda Handler Tests", () => {
-  afterEach(() => {
+describe("GET /products", () => {
+  beforeEach(() => {
+    ddbMock.reset();
     jest.clearAllMocks();
   });
 
-  it("should handle valid request and return products", async () => {
-    await handler();
-    expect(buildResponse).toHaveBeenCalledWith(200, products);
+  test("should return all products with their stock counts", async () => {
+    const products: Product[] = [
+      { id: "1", title: "Product 1", description: "Description 1", price: 100 },
+      { id: "2", title: "Product 2", description: "Description 2", price: 200 },
+    ];
+    const stocks: Stock[] = [
+      { product_id: "1", count: 10 },
+      { product_id: "2", count: 5 },
+    ];
+
+    ddbMock
+      .on(ScanCommand, { TableName: PRODUCTS_TABLE_NAME })
+      .resolves({ Items: products });
+    ddbMock
+      .on(ScanCommand, { TableName: STOCKS_TABLE_NAME })
+      .resolves({ Items: stocks });
+
+    const event = {} as APIGatewayProxyEvent;
+
+    const result = await handler(event);
+
+    expect(result).toEqual(
+      buildResponse(200, [
+        { ...products[0], count: 10 },
+        { ...products[1], count: 5 },
+      ])
+    );
+  });
+
+  test("should return products with count 0 if stock is not found", async () => {
+    const products: Product[] = [
+      { id: "1", title: "Product 1", description: "Description 1", price: 100 },
+    ];
+    const stocks: Stock[] = [];
+
+    ddbMock
+      .on(ScanCommand, { TableName: PRODUCTS_TABLE_NAME })
+      .resolves({ Items: products });
+    ddbMock
+      .on(ScanCommand, { TableName: STOCKS_TABLE_NAME })
+      .resolves({ Items: stocks });
+
+    const event = {} as APIGatewayProxyEvent;
+
+    const result = await handler(event);
+
+    expect(result).toEqual(buildResponse(200, [{ ...products[0], count: 0 }]));
+  });
+
+  test("should handle errors gracefully", async () => {
+    ddbMock.on(ScanCommand).rejects(new Error("DynamoDB error"));
+
+    const event = {} as APIGatewayProxyEvent;
+
+    const result = await handler(event);
+
+    expect(result).toEqual(buildResponse(500, { message: "Smth went wrong" }));
   });
 });

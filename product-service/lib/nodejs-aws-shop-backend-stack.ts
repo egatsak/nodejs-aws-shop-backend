@@ -10,7 +10,12 @@ import { Construct } from "constructs";
 import { ProductServiceDatabase } from "./db/db";
 import { IMPORT_PRODUCTS_SQS_ARN } from "../../constants";
 import { Queue } from "aws-cdk-lib/aws-sqs";
-import { Subscription, SubscriptionProtocol, Topic } from "aws-cdk-lib/aws-sns";
+import {
+  Subscription,
+  SubscriptionFilter,
+  SubscriptionProtocol,
+  Topic,
+} from "aws-cdk-lib/aws-sns";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import { IMPORT_PRODUCTS_SQS_BATCH_SIZE } from "./constants";
@@ -96,6 +101,19 @@ export class NodejsAwsShopBackendStack extends Stack {
         endpoint: process.env.SNS_SUBSCRIBE_EMAIL ?? "",
         protocol: SubscriptionProtocol.EMAIL,
         topic: createProductTopic,
+      }
+    );
+
+    const createExpensiveProductTopicSubscription = new Subscription(
+      this,
+      "CreateExpensiveProductTopicSubscription",
+      {
+        endpoint: process.env.SNS_SUBSCRIBE_EXPENSIVE_EMAIL ?? "",
+        protocol: SubscriptionProtocol.EMAIL,
+        topic: createProductTopic,
+        filterPolicy: {
+          expensive: SubscriptionFilter.numericFilter({ greaterThan: 0 }),
+        },
       }
     );
 

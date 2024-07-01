@@ -1,4 +1,4 @@
-import Joi from "joi";
+import * as Joi from "joi";
 
 export interface ProductDto {
   title: string;
@@ -11,5 +11,5 @@ export const productDtoSchema = Joi.object<ProductDto>({
   title: Joi.string().required(),
   price: Joi.number().required().integer().min(0),
   description: Joi.string(),
-  count: Joi.number().required().integer().min(0)
+  count: Joi.number().required().integer().min(0),
 });

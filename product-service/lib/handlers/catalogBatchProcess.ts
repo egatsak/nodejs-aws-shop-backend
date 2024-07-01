@@ -64,11 +64,19 @@ export const handler = async (event: SQSEvent) => {
     );
 
     // SNS
+    const expensiveProducts = products.filter((prod) => prod.price >= 100);
+
     const snsResult = await snsClient.send(
       new PublishCommand({
         TopicArn: process.env.SNS_TOPIC_ARN ?? "",
         Subject: `New products from CSV parse have been added to DB successfully.`,
         Message: `Products:\n${JSON.stringify(products)}`,
+        MessageAttributes: {
+          expensive: {
+            DataType: "Number",
+            StringValue: String(expensiveProducts.length),
+          },
+        },
       })
     );
 
