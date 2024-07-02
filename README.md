@@ -1,8 +1,8 @@
 # NODEJS AWS SHOP BACKEND
 
-AWS Serverless API built using AWS CDK + Typescript, AWS API Gateway, AWS Lambda, AWS DynamoDB.
+AWS Serverless API built using AWS CDK + Typescript, AWS API Gateway, AWS Lambda, AWS DynamoDB, AWS S3.
 
-Frontend part deployed at AWS CloudFront is connected to the API built using AWS Lambdas, AWS DynamoDB & API Gateway
+Frontend part deployed at AWS CloudFront is connected to the API built using AWS Lambdas, AWS DynamoDB, AWS S3 & AWS API Gateway
 
 ## Deploy links
 
@@ -10,15 +10,19 @@ Frontend part deployed at AWS CloudFront is connected to the API built using AWS
 
 [Frontend App deploy link](https://dosfklikrk6wd.cloudfront.net/)
 
-### API
+### Products API
 
-GET [{{URL}}/products](https://km96rjp673.execute-api.us-east-1.amazonaws.com/products) - returns JSON with hardcoded products array
+GET [{{URL}}/products](https://km96rjp673.execute-api.us-east-1.amazonaws.com/products) - returns JSON with products array queried from a DynamoDB table
 
-GET [{{URL}}/products/{id}](https://km96rjp673.execute-api.us-east-1.amazonaws.com/products/855e9a53-dd3c-46b8-8cb1-329f133146f6) - returns JSON with a single product
+GET [{{URL}}/products/{id}](https://km96rjp673.execute-api.us-east-1.amazonaws.com/products/855e9a53-dd3c-46b8-8cb1-329f133146f6) - returns JSON with a single product from a DynamoDB table
 
 GET [{{URL}}/products/non-existing-id](https://km96rjp673.execute-api.us-east-1.amazonaws.com/products/some-random-id) - returns 404 status code & 'Product Not Found' error message
 
-POST [{{URL}}/products](https://km96rjp673.execute-api.us-east-1.amazonaws.com/products/some-random-id) - returns 201 status code & JSON with created product
+POST [{{URL}}/products](https://km96rjp673.execute-api.us-east-1.amazonaws.com/products/some-random-id) - creates new product, inserts it into DynamoDB table and returns 201 status code & JSON with created product
+
+### Import API
+
+GET [{{URL}}/import?name=fileName.csv](https://i3jtq6hsag.execute-api.us-east-1.amazonaws.com/dev/import?name=fileName.csv) - returns JSON with a S3 Presigned Upload URL
 
 ## Useful commands
 
@@ -32,5 +36,7 @@ POST [{{URL}}/products](https://km96rjp673.execute-api.us-east-1.amazonaws.com/p
 
 ## Extra
 
-`openapi.json` file contains api docs
-`insomnia_aws.json` contains Insomnia project for API testing (comes in handy POST requests, for instance)
+`openapi.json` files contain api docs
+`insomnia_aws.json` contains Insomnia project for API testing (comes in handy for POST requests, for instance)
+
+Cheers!

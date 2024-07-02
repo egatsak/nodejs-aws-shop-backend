@@ -1,0 +1,102 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "ImportServiceHttpApi",
+    "version": "2024-06-22 13:18:15UTC"
+  },
+  "servers": [
+    {
+      "url": "https://i3jtq6hsag.execute-api.us-east-1.amazonaws.com/{basePath}",
+      "variables": {
+        "basePath": {
+          "default": "dev"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/import": {
+      "get": {
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestImportProductsUrlModel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400 response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadUrlErrorModel"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "500 response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadUrlErrorModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RequestImportProductsUrlModel": {
+        "title": "SignedUrl",
+        "required": ["message"],
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "UploadUrlErrorModel": {
+        "title": "Error",
+        "required": ["message"],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "x-amazon-apigateway-cors": {
+    "allowMethods": ["*"],
+    "allowHeaders": ["*"],
+    "exposeHeaders": [
+      "access-control-allow-headers",
+      "access-control-allow-methods",
+      "access-control-allow-origin"
+    ],
+    "maxAge": -42,
+    "allowCredentials": false,
+    "allowOrigins": ["*"]
+  },
+  "x-amazon-apigateway-importexport-version": "1.0"
+}
