@@ -1,16 +1,33 @@
-import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as cdk from "aws-cdk-lib";
+import {CfnOutput} from "aws-cdk-lib";
+import {Runtime} from "aws-cdk-lib/aws-lambda";
+import {NodejsFunction, NodejsFunctionProps} from "aws-cdk-lib/aws-lambda-nodejs";
+import {Construct} from "constructs";
+
+const sharedLambdaProps: NodejsFunctionProps = {
+  runtime: Runtime.NODEJS_20_X,
+  environment: {
+    PRODUCT_AWS_REGION: process.env.AWS_REGION ?? "us-east-1"
+  }
+};
 
 export class AuthorizationServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
+    const basicAuthorizerFunction = new NodejsFunction(this, "BasicAuthorizerLambda", {
+      ...sharedLambdaProps,
+      entry: "lib/handlers/basicAuthorizer.ts",
+      functionName: "basicAuthorizer",
+      environment: {
+        ...sharedLambdaProps.environment,
+        egatsak: process.env.egatsak ?? ""
+      }
+    });
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'AuthorizationServiceQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    new CfnOutput(this, "BasicAuthorizerLambdaArn", {
+      value: basicAuthorizerFunction.functionArn,
+      exportName: BASIC_AUTHORIZER_LAMBDA_ARN
+    });
   }
 }
