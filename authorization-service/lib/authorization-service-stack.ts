@@ -3,6 +3,7 @@ import {CfnOutput} from "aws-cdk-lib";
 import {Runtime} from "aws-cdk-lib/aws-lambda";
 import {NodejsFunction, NodejsFunctionProps} from "aws-cdk-lib/aws-lambda-nodejs";
 import {Construct} from "constructs";
+import {BASIC_AUTHORIZER_LAMBDA_ARN} from "../../constants";
 
 const sharedLambdaProps: NodejsFunctionProps = {
   runtime: Runtime.NODEJS_20_X,

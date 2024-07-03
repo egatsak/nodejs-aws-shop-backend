@@ -8,17 +8,62 @@ import {
   NodejsFunctionProps,
 } from "aws-cdk-lib/aws-lambda-nodejs";
 import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
-import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
+import {
+  Effect,
+  PolicyStatement,
+  Role,
+  ServicePrincipal,
+} from "aws-cdk-lib/aws-iam";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import {
+  BASIC_AUTHORIZER_LAMBDA_ARN,
   IMPORT_PRODUCTS_SQS_ARN,
   IMPORT_PRODUCTS_SQS_URL,
 } from "../../constants";
+import { TokenAuthorizer } from "aws-cdk-lib/aws-apigateway";
+import { HttpLambdaAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    // Authorizer lambda
+    const basicAuthorizerLambdaArn = cdk.Fn.importValue(
+      BASIC_AUTHORIZER_LAMBDA_ARN
+    );
+
+    const basicAuthorizerLambda = NodejsFunction.fromFunctionArn(
+      this,
+      "BasicAuthorizerLambda",
+      basicAuthorizerLambdaArn
+    );
+
+    const authRole = new Role(this, "BasicAuthorizerRole", {
+      assumedBy: new ServicePrincipal("apigateway.amazonaws.com"),
+    });
+
+    /* authRole.addToPolicy(
+      new PolicyStatement({
+        actions: ["lambda:InvokeFunction"],
+        resources: [basicAuthorizerLambda.functionArn],
+      })
+    ); */
+    basicAuthorizerLambda.addToRolePolicy(
+      new PolicyStatement({
+        actions: ["lambda:InvokeFunction"],
+        resources: [basicAuthorizerLambda.functionArn],
+      })
+    );
+
+    const tokenAuthorizer = new HttpLambdaAuthorizer(
+      "BasicAuthorizer",
+      basicAuthorizerLambda,
+      {
+        authorizerName: "MyLambdaAuthorizer",
+        identitySource: ["$request.header.Authorization"],
+      }
+    );
 
     // S3 Bucket
     const importServiceBucket = new s3.Bucket(this, "ImportServiceS3Bucket", {
@@ -66,6 +111,7 @@ export class ImportServiceStack extends cdk.Stack {
         ...sharedLambdaProps,
         entry: "lib/handlers/importProductsFile.ts",
         functionName: "importProductsFile",
+        // role: authRole,
       }
     );
 
@@ -145,6 +191,7 @@ export class ImportServiceStack extends cdk.Stack {
         "ImportServiceLambdaIntegration",
         importProductsFileFunction
       ),
+      authorizer: tokenAuthorizer,
     });
 
     // Deploy stage
