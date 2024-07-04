@@ -203,13 +203,9 @@ export class ImportServiceStack extends cdk.Stack {
     basicAuthorizerLambda.addPermission("ApiGatewayInvokePermissions", {
       action: "lambda:InvokeFunction",
       principal: new ServicePrincipal("apigateway.amazonaws.com"),
+      // TODO any ideas how to get authorizer id? only from console...
       sourceArn: `arn:aws:execute-api:${process.env.AWS_REGION}:637423488590:${importsApiGateway.apiId}/authorizers/6k0z7m`,
     });
-    /* 
-    tokenAuthorizer.bind({
-      route: importRoute[0],
-      scope: this,
-    }); */
 
     // Deploy stage
     const devStage = new apiGateway.HttpStage(
