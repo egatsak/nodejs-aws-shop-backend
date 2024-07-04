@@ -22,7 +22,10 @@ import {
   IMPORT_PRODUCTS_SQS_URL,
 } from "../../constants";
 import { TokenAuthorizer } from "aws-cdk-lib/aws-apigateway";
-import { HttpLambdaAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
+import {
+  HttpLambdaAuthorizer,
+  HttpLambdaResponseType,
+} from "aws-cdk-lib/aws-apigatewayv2-authorizers";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -39,16 +42,27 @@ export class ImportServiceStack extends cdk.Stack {
       basicAuthorizerLambdaArn
     );
 
-    const authRole = new Role(this, "BasicAuthorizerRole", {
+    const tokenAuthorizer = new HttpLambdaAuthorizer(
+      "ImportAuthorizer",
+      basicAuthorizerLambda,
+      {
+        authorizerName: "MyLambdaAuthorizer",
+        identitySource: ["$request.header.Authorization"],
+        resultsCacheTtl: cdk.Duration.seconds(0),
+      }
+    );
+    /* const authRole = new Role(this, "BasicAuthorizerRole", {
       assumedBy: new ServicePrincipal("apigateway.amazonaws.com"),
     });
 
-    /* authRole.addToPolicy(
+    authRole.addToPolicy(
       new PolicyStatement({
         actions: ["lambda:InvokeFunction"],
         resources: [basicAuthorizerLambda.functionArn],
+        effect: Effect.ALLOW,
       })
     ); */
+    /*
     basicAuthorizerLambda.addToRolePolicy(
       new PolicyStatement({
         actions: ["lambda:InvokeFunction"],
@@ -56,14 +70,7 @@ export class ImportServiceStack extends cdk.Stack {
       })
     );
 
-    const tokenAuthorizer = new HttpLambdaAuthorizer(
-      "BasicAuthorizer",
-      basicAuthorizerLambda,
-      {
-        authorizerName: "MyLambdaAuthorizer",
-        identitySource: ["$request.header.Authorization"],
-      }
-    );
+     */
 
     // S3 Bucket
     const importServiceBucket = new s3.Bucket(this, "ImportServiceS3Bucket", {
@@ -111,7 +118,6 @@ export class ImportServiceStack extends cdk.Stack {
         ...sharedLambdaProps,
         entry: "lib/handlers/importProductsFile.ts",
         functionName: "importProductsFile",
-        // role: authRole,
       }
     );
 
@@ -184,7 +190,7 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
-    importsApiGateway.addRoutes({
+    const importRoute = importsApiGateway.addRoutes({
       path: "/import",
       methods: [apiGateway.HttpMethod.GET],
       integration: new HttpLambdaIntegration(
@@ -193,6 +199,17 @@ export class ImportServiceStack extends cdk.Stack {
       ),
       authorizer: tokenAuthorizer,
     });
+
+    basicAuthorizerLambda.addPermission("ApiGatewayInvokePermissions", {
+      action: "lambda:InvokeFunction",
+      principal: new ServicePrincipal("apigateway.amazonaws.com"),
+      sourceArn: `arn:aws:execute-api:${process.env.AWS_REGION}:637423488590:${importsApiGateway.apiId}/authorizers/6k0z7m`,
+    });
+    /* 
+    tokenAuthorizer.bind({
+      route: importRoute[0],
+      scope: this,
+    }); */
 
     // Deploy stage
     const devStage = new apiGateway.HttpStage(

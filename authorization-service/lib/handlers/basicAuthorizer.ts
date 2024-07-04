@@ -1,45 +1,50 @@
-import {APIGatewayAuthorizerResult, APIGatewayTokenAuthorizerEvent} from "aws-lambda";
+import {APIGatewayAuthorizerEvent, APIGatewayAuthorizerResult, APIGatewayTokenAuthorizerEvent} from "aws-lambda";
 
-export const handler = function (event: APIGatewayTokenAuthorizerEvent): APIGatewayAuthorizerResult {
-  console.log(`Authorizer event: ${event}`);
+export const handler = async function (event: APIGatewayAuthorizerEvent): Promise<APIGatewayAuthorizerResult> {
+  const [keys, values] = Object.entries(event);
+  for (let i = 0; i < keys.length; i++) {
+    console.log(keys[i], values[i]);
+  }
+  console.log(`Authorizer event: ${event.type} , ${event.methodArn}, ${event}`);
 
-  const token = event.authorizationToken.split(" ")[1];
+  /* const decodedToken = Buffer.from(event.authorizationToken, "base64").toString("utf-8");
+  console.log(decodedToken);
+  const token = decodedToken.split(" ")[1];
+  console.log(token);
 
-  const decodedToken = Buffer.from(token, "base64").toString("utf-8");
-
-  const [username, password] = decodedToken.split(":");
-
-  const isVerified = username === "egatsak" && password === process.env.egatsak;
+  const [username, password] = token.split(":");
+ */
+  const isVerified = true; /* username === "egatsak" && password === process.env.egatsak; */
 
   if (isVerified) {
-    console.log("Access granted to user=" + username);
-    return {
-      principalId: username,
+    console.log("Access granted to user=" + "username");
+    return Promise.resolve({
+      principalId: "username",
       policyDocument: {
         Version: "2012-10-17",
         Statement: [
           {
             Action: "execute-api:Invoke",
             Effect: "Allow",
-            Resource: "*"
+            Resource: event.methodArn
           }
         ]
       }
-    } satisfies APIGatewayAuthorizerResult;
+    } satisfies APIGatewayAuthorizerResult);
   } else {
-    console.log("Access denied to user=" + username);
-    return {
-      principalId: username,
+    console.log("Access denied to user=" + "username");
+    return Promise.resolve({
+      principalId: "username",
       policyDocument: {
         Version: "2012-10-17",
         Statement: [
           {
             Action: "execute-api:Invoke",
             Effect: "Deny",
-            Resource: "*"
+            Resource: event.methodArn
           }
         ]
       }
-    } satisfies APIGatewayAuthorizerResult;
+    } satisfies APIGatewayAuthorizerResult);
   }
 };
