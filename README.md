@@ -41,6 +41,6 @@ GET [{{URL}}/import?name=fileName.csv](https://i3jtq6hsag.execute-api.us-east-1.
 
 Cheers!
 
-ARN for authorizer lambda permission:
+NB! ARN for authorizer lambda permission:
 arn:aws:execute-api:{AWS_REGION}:{AWS_ACCOUNT_ID}:{ApiGateway_ARN}/authorizers/{Authorizer_Id}
 Authorizer_Id can be taken from AWS Console (ApiGateway->Authorizers), and must be manually set in the console (Lambda->Configuration->Permissions)

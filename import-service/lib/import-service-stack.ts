@@ -1,19 +1,15 @@
 import * as cdk from "aws-cdk-lib";
-import * as apiGateway from "aws-cdk-lib/aws-apigatewayv2";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import * as apiGateway from "aws-cdk-lib/aws-apigatewayv2";
 import { Runtime } from "aws-cdk-lib/aws-lambda";
+import { Effect, PolicyStatement, ServicePrincipal } from "aws-cdk-lib/aws-iam";
+import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import { HttpLambdaAuthorizer } from "aws-cdk-lib/aws-apigatewayv2-authorizers";
+import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
 import {
   NodejsFunction,
   NodejsFunctionProps,
 } from "aws-cdk-lib/aws-lambda-nodejs";
-import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
-import {
-  Effect,
-  PolicyStatement,
-  Role,
-  ServicePrincipal,
-} from "aws-cdk-lib/aws-iam";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import {
@@ -21,11 +17,6 @@ import {
   IMPORT_PRODUCTS_SQS_ARN,
   IMPORT_PRODUCTS_SQS_URL,
 } from "../../constants";
-import { TokenAuthorizer } from "aws-cdk-lib/aws-apigateway";
-import {
-  HttpLambdaAuthorizer,
-  HttpLambdaResponseType,
-} from "aws-cdk-lib/aws-apigatewayv2-authorizers";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -51,26 +42,6 @@ export class ImportServiceStack extends cdk.Stack {
         resultsCacheTtl: cdk.Duration.seconds(0),
       }
     );
-    /* const authRole = new Role(this, "BasicAuthorizerRole", {
-      assumedBy: new ServicePrincipal("apigateway.amazonaws.com"),
-    });
-
-    authRole.addToPolicy(
-      new PolicyStatement({
-        actions: ["lambda:InvokeFunction"],
-        resources: [basicAuthorizerLambda.functionArn],
-        effect: Effect.ALLOW,
-      })
-    ); */
-    /*
-    basicAuthorizerLambda.addToRolePolicy(
-      new PolicyStatement({
-        actions: ["lambda:InvokeFunction"],
-        resources: [basicAuthorizerLambda.functionArn],
-      })
-    );
-
-     */
 
     // S3 Bucket
     const importServiceBucket = new s3.Bucket(this, "ImportServiceS3Bucket", {
@@ -190,7 +161,7 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
-    const importRoute = importsApiGateway.addRoutes({
+    importsApiGateway.addRoutes({
       path: "/import",
       methods: [apiGateway.HttpMethod.GET],
       integration: new HttpLambdaIntegration(
@@ -200,10 +171,11 @@ export class ImportServiceStack extends cdk.Stack {
       authorizer: tokenAuthorizer,
     });
 
+    // Permission
     basicAuthorizerLambda.addPermission("ApiGatewayInvokePermissions", {
       action: "lambda:InvokeFunction",
       principal: new ServicePrincipal("apigateway.amazonaws.com"),
-      // TODO any ideas how to get authorizer id? only from console...
+      // TODO any ideas how to get authorizer id? only from console... currently hard-coded
       sourceArn: `arn:aws:execute-api:${process.env.AWS_REGION}:637423488590:${importsApiGateway.apiId}/authorizers/6k0z7m`,
     });
 
