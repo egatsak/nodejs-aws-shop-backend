@@ -9,12 +9,18 @@ import {
 } from "aws-cdk-lib/aws-lambda-nodejs";
 import { LambdaDestination } from "aws-cdk-lib/aws-s3-notifications";
 import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
+import {
+  IMPORT_PRODUCTS_SQS_ARN,
+  IMPORT_PRODUCTS_SQS_URL,
+} from "../../constants";
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // S3 Bucket
     const importServiceBucket = new s3.Bucket(this, "ImportServiceS3Bucket", {
       bucketName: "egatsak-import-service-bucket",
       cors: [
@@ -35,22 +41,16 @@ export class ImportServiceStack extends cdk.Stack {
           ],
         },
       ],
-      /*      autoDeleteObjects: true,
-     removalPolicy: RemovalPolicy.DESTROY, */
+      autoDeleteObjects: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    const bucketUploadedPolicy = new PolicyStatement({
-      actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
-      resources: [importServiceBucket.arnForObjects(`uploaded/*`)],
-      effect: Effect.ALLOW,
+    // SQS
+    const catalogItemsQueue = new Queue(this, "ImportProductsQueue", {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    const bucketParsedPolicy = new PolicyStatement({
-      actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
-      resources: [importServiceBucket.arnForObjects(`parsed/*`)],
-      effect: Effect.ALLOW,
-    });
-
+    // Lambdas
     const sharedLambdaProps: NodejsFunctionProps = {
       runtime: Runtime.NODEJS_20_X,
       environment: {
@@ -69,6 +69,56 @@ export class ImportServiceStack extends cdk.Stack {
       }
     );
 
+    const importFileParserFunction = new NodejsFunction(
+      this,
+      "ImportFileParserLambda",
+      {
+        ...sharedLambdaProps,
+        entry: "lib/handlers/importFileParser.ts",
+        functionName: "importFileParser",
+        environment: {
+          ...sharedLambdaProps.environment,
+          PRODUCT_SQS_URL: catalogItemsQueue.queueUrl,
+        },
+      }
+    );
+
+    // Policies
+    const sqsImportPolicy = new PolicyStatement({
+      actions: ["sqs:SendMessage"],
+      resources: [catalogItemsQueue.queueArn],
+      effect: Effect.ALLOW,
+    });
+
+    const bucketUploadedPolicy = new PolicyStatement({
+      actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+      resources: [importServiceBucket.arnForObjects(`uploaded/*`)],
+      effect: Effect.ALLOW,
+    });
+
+    const bucketParsedPolicy = new PolicyStatement({
+      actions: ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+      resources: [importServiceBucket.arnForObjects(`parsed/*`)],
+      effect: Effect.ALLOW,
+    });
+
+    importProductsFileFunction.addToRolePolicy(bucketUploadedPolicy);
+    importFileParserFunction.addToRolePolicy(bucketParsedPolicy);
+    importFileParserFunction.addToRolePolicy(sqsImportPolicy);
+    importServiceBucket.grantReadWrite(importProductsFileFunction);
+    importServiceBucket.grantReadWrite(importFileParserFunction);
+
+    // Notifications
+    importServiceBucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new LambdaDestination(importFileParserFunction),
+      {
+        prefix: "uploaded/",
+        suffix: "csv",
+      }
+    );
+
+    // API Gateway
     const importsApiGateway = new apiGateway.HttpApi(
       this,
       "ImportsHttpApiGateway",
@@ -97,30 +147,7 @@ export class ImportServiceStack extends cdk.Stack {
       ),
     });
 
-    const importFileParserFunction = new NodejsFunction(
-      this,
-      "ImportFileParserLambda",
-      {
-        ...sharedLambdaProps,
-        entry: "lib/handlers/importFileParser.ts",
-        functionName: "importFileParser",
-      }
-    );
-
-    importServiceBucket.addEventNotification(
-      s3.EventType.OBJECT_CREATED,
-      new LambdaDestination(importFileParserFunction),
-      {
-        prefix: "uploaded/",
-        suffix: "csv",
-      }
-    );
-
-    importProductsFileFunction.addToRolePolicy(bucketUploadedPolicy);
-    importFileParserFunction.addToRolePolicy(bucketParsedPolicy);
-    importServiceBucket.grantReadWrite(importProductsFileFunction);
-    importServiceBucket.grantReadWrite(importFileParserFunction);
-
+    // Deploy stage
     const devStage = new apiGateway.HttpStage(
       this,
       "ImportsHttpApiGatewayDevStage",
@@ -133,6 +160,16 @@ export class ImportServiceStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "ApiUrl", {
       value: devStage.url ?? "",
+    });
+
+    new cdk.CfnOutput(this, "ImportProductsQueueUrl", {
+      value: catalogItemsQueue.queueUrl,
+      exportName: IMPORT_PRODUCTS_SQS_URL,
+    });
+
+    new cdk.CfnOutput(this, "ImportProductsQueueArn", {
+      value: catalogItemsQueue.queueArn,
+      exportName: IMPORT_PRODUCTS_SQS_ARN,
     });
   }
 }

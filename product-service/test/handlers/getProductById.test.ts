@@ -1,117 +1,129 @@
-import { APIGatewayProxyEvent } from "aws-lambda";
-import { products } from "../../lib/db/db";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { QueryCommand, DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { mockClient } from "aws-sdk-client-mock";
+import { PRODUCTS_TABLE_NAME, STOCKS_TABLE_NAME } from "../../lib/constants";
 import { buildResponse } from "../../lib/utils";
-import { HttpError } from "../../lib/errorHandler";
 import { handler } from "../../lib/handlers/getProductById";
 
-// Mocking the necessary modules
-jest.mock("../../lib/db/db", () => ({
-  products: [
-    {
-      id: "855e9a53-dd3c-46b8-8cb1-329f133146f6",
-      description: "Short Product Description1",
-      price: 24,
-      title: "ProductOne",
-    },
-    {
-      id: "d5c67566-72ff-4f1e-b4f0-ecc9b84b2b40",
-      description: "Short Product Description7",
-      price: 15,
-      title: "ProductTitle",
-    },
-    {
-      id: "a5116cf4-9915-4a91-8424-14dc3d5e6cb2",
-      description: "Short Product Description2",
-      price: 23,
-      title: "Product",
-    },
-  ],
-}));
+const ddbMock = mockClient(DynamoDBDocumentClient);
 
-jest.mock("../../lib/utils.ts", () => ({
+jest.mock("../../lib/utils", () => ({
   buildResponse: jest.fn(),
 }));
 
-describe("getProductById Lambda Handler Tests", () => {
-  afterEach(() => {
+describe("Get Product by ID", () => {
+  beforeEach(() => {
+    ddbMock.reset();
     jest.clearAllMocks();
   });
 
-  const testEvent: APIGatewayProxyEvent = {
-    pathParameters: {
-      productId: "855e9a53-dd3c-46b8-8cb1-329f133146f6",
-    },
-    body: "",
-    headers: {},
-    multiValueHeaders: {},
-    httpMethod: "GET",
-    isBase64Encoded: false,
-    path: "",
-    queryStringParameters: {},
-    multiValueQueryStringParameters: {},
-    stageVariables: {},
-    requestContext: {} as any,
-    resource: "",
-  };
-
-  it("should handle valid product request", async () => {
-    await handler(testEvent);
-
-    expect(buildResponse).toHaveBeenCalledWith(200, products[0]);
-  });
-
-  it("should handle product not found error", async () => {
-    const event: APIGatewayProxyEvent = {
-      ...testEvent,
+  test("should return product with stock count", async () => {
+    const event: Partial<APIGatewayProxyEvent> = {
       pathParameters: {
-        productId: "NONEXISTENT-ID",
+        productId: "123",
       },
     };
 
-    await handler(event);
+    ddbMock
+      .on(QueryCommand, {
+        TableName: PRODUCTS_TABLE_NAME,
+        KeyConditionExpression: "id = :id",
+        ExpressionAttributeValues: {
+          ":id": "123",
+        },
+      })
+      .resolves({
+        Items: [
+          {
+            id: "123",
+            title: "Product 123",
+            description: "Description 123",
+            price: 123,
+          },
+        ],
+      });
 
-    expect(buildResponse).toHaveBeenCalledWith(404, {
+    ddbMock
+      .on(QueryCommand, {
+        TableName: STOCKS_TABLE_NAME,
+        KeyConditionExpression: "product_id = :product_id",
+        ExpressionAttributeValues: {
+          ":product_id": "123",
+        },
+      })
+      .resolves({
+        Items: [
+          {
+            product_id: "123",
+            count: 10,
+          },
+        ],
+      });
+
+    (buildResponse as jest.Mock).mockImplementation((statusCode, body) => ({
+      statusCode,
+      body: JSON.stringify(body),
+    }));
+
+    const result: APIGatewayProxyResult = await handler(
+      event as APIGatewayProxyEvent
+    );
+
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body)).toEqual({
+      id: "123",
+      title: "Product 123",
+      description: "Description 123",
+      price: 123,
+      count: 10,
+    });
+  });
+
+  test("should return 404 if product is not found", async () => {
+    const event: Partial<APIGatewayProxyEvent> = {
+      pathParameters: {
+        productId: "123",
+      },
+    };
+
+    ddbMock
+      .on(QueryCommand, {
+        TableName: PRODUCTS_TABLE_NAME,
+        KeyConditionExpression: "id = :id",
+        ExpressionAttributeValues: {
+          ":id": "123",
+        },
+      })
+      .resolves({
+        Items: [],
+      });
+
+    const result: APIGatewayProxyResult = await handler(
+      event as APIGatewayProxyEvent
+    );
+
+    expect(result.statusCode).toBe(404);
+    expect(JSON.parse(result.body)).toEqual({
       message: "Product not found",
     });
   });
 
-  it("should handle generic error", async () => {
-    const event: APIGatewayProxyEvent = {
-      ...testEvent,
+  test("should return 500 if there is an internal error", async () => {
+    const event: Partial<APIGatewayProxyEvent> = {
       pathParameters: {
-        productId: "any-ID",
+        productId: "123",
       },
     };
 
-    const genericError = new Error("Something went wrong");
-    jest.spyOn(products, "find").mockImplementation(() => {
-      throw genericError;
-    });
+    ddbMock.on(QueryCommand).rejects(new Error("Internal server error"));
 
-    await handler(event);
+    const result: APIGatewayProxyResult = await handler(
+      event as APIGatewayProxyEvent
+    );
 
-    expect(buildResponse).toHaveBeenCalledWith(500, {
-      message: "Something went wrong",
-    });
-  });
-
-  it("should handle HttpError", async () => {
-    const event: APIGatewayProxyEvent = {
-      ...testEvent,
-      pathParameters: {
-        productId: "any-ID",
-      },
-    };
-
-    const httpError = new HttpError(403, "Forbidden");
-    jest.spyOn(products, "find").mockImplementation(() => {
-      throw httpError;
-    });
-
-    await handler(event);
-
-    expect(buildResponse).toHaveBeenCalledWith(403, {
-      message: "Forbidden",
+    expect(result.statusCode).toBe(500);
+    expect(JSON.parse(result.body)).toEqual({
+      message: "Internal server error",
     });
   });
 });
