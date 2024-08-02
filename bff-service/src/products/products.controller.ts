@@ -5,12 +5,12 @@ import { ProductsService } from './products.service';
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @Get('product')
+  /*  @Get('product')
   getProduct() {}
 
   @Post('product')
   createProduct() {}
 
   @Delete('product')
-  deleteProduct() {}
+  deleteProduct() {} */
 }
