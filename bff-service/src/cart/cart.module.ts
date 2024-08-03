@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { CartService } from './cart.service';
 import { CartController } from './cart.controller';
 import { HttpModule } from '@nestjs/axios';
 
@@ -11,6 +10,5 @@ import { HttpModule } from '@nestjs/axios';
     }),
   ],
   controllers: [CartController],
-  providers: [CartService],
 })
 export class CartModule {}

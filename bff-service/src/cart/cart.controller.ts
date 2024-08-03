@@ -1,64 +1,112 @@
-import { Controller, Delete, Get, Post, Put, Req, Res } from '@nestjs/common';
-import { CartService } from './cart.service';
+import { Body, Controller, Get, Post, Put, Req, Res } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { catchError, firstValueFrom, lastValueFrom } from 'rxjs';
+import { catchError, firstValueFrom, throwError } from 'rxjs';
 import { CartPaths } from 'src/common/cartPaths';
-import { AxiosError, AxiosHeaders } from 'axios';
+import { AxiosError } from 'axios';
 import { Request, Response } from 'express';
-
-function stringify(obj) {
-  let cache = [];
-  const str = JSON.stringify(obj, function (key, value) {
-    if (typeof value === 'object' && value !== null) {
-      if (cache.indexOf(value) !== -1) {
-        // Circular reference found, discard key
-        return;
-      }
-      // Store value in our collection
-      cache.push(value);
-    }
-    return value;
-  });
-  cache = null; // reset the cache
-  return str;
-}
+import { buildResponse } from 'src/common/helpers';
 
 @Controller('profile/cart')
 export class CartController {
-  constructor(
-    private readonly cartService: CartService,
-    private readonly httpService: HttpService,
-  ) {}
+  constructor(private readonly httpService: HttpService) {}
 
   @Get('')
   async getCart(@Req() req: Request, @Res() res: Response) {
-    const result = await lastValueFrom(
+    const result = await firstValueFrom(
       this.httpService
         .get(process.env.CART_API_BASE_URL + `${CartPaths.GET_CART}`, {
-          headers: req.headers.authorization
-            ? {
-                Authorization: req.headers.authorization,
-              }
-            : {},
+          ...(req.headers.authorization && {
+            headers: {
+              Authorization: req.headers.authorization,
+            },
+          }),
         })
         .pipe(
           catchError((error) => {
             if (error instanceof AxiosError) {
+              buildResponse(res, error.response.status, error.response.data);
+              return throwError(() => error);
             }
-            throw error;
           }),
         ),
     );
-    res.status(result.status);
-    return res.end(stringify(result.data));
+    buildResponse(res, result.status, result.data);
   }
-  /* 
+
   @Put('')
-  putCart() {}
+  async putCart(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() body: unknown,
+  ) {
+    const result = await firstValueFrom(
+      this.httpService
+        .put(process.env.CART_API_BASE_URL + `${CartPaths.PUT_CART}`, body, {
+          ...(req.headers.authorization && {
+            headers: {
+              Authorization: req.headers.authorization,
+            },
+          }),
+        })
+        .pipe(
+          catchError((error) => {
+            if (error instanceof AxiosError) {
+              buildResponse(res, error.response.status, error.response.data);
+              return throwError(() => error);
+            }
+          }),
+        ),
+    );
+    buildResponse(res, result.status, result.data);
+  }
 
-  @Delete('')
-  deleteCart() {}
+  /* @Delete('')
+  async deleteCart(@Req() req: Request, @Res() res: Response) {
+    const result = await firstValueFrom(
+      this.httpService
+        .delete(process.env.CART_API_BASE_URL + `${CartPaths.DELETE_CART}`, {
+          ...(req.headers.authorization && {
+            headers: {
+              Authorization: req.headers.authorization,
+            },
+          }),
+        })
+        .pipe(
+          catchError((error) => {
+            if (error instanceof AxiosError) {
+              buildResponse(res, error.response.status, error.response.data);
+              return throwError(() => error);
+            }
+          }),
+        ),
+    );
+    buildResponse(res, result.status, result.data);
+  } */
 
-  @Post('')
-  checkout() {} */
+  @Post('checkout')
+  async checkout(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() body: unknown,
+  ) {
+    const result = await firstValueFrom(
+      this.httpService
+        .post(process.env.CART_API_BASE_URL + `${CartPaths.CHECKOUT}`, body, {
+          ...(req.headers.authorization && {
+            headers: {
+              Authorization: req.headers.authorization,
+            },
+          }),
+        })
+        .pipe(
+          catchError((error) => {
+            if (error instanceof AxiosError) {
+              buildResponse(res, error.response.status, error.response.data);
+              return throwError(() => error);
+            }
+          }),
+        ),
+    );
+    buildResponse(res, result.status, result.data);
+  }
 }
