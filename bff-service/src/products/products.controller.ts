@@ -1,9 +1,18 @@
 import { HttpService } from '@nestjs/axios';
-import { Controller, Delete, Get, Param, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 import { ProductPaths } from 'src/common/productPaths';
-import { buildResponse, handleError } from 'src/common/helpers';
+import { buildResponse, getPathname, handleError } from 'src/common/helpers';
 
 @Controller('products')
 export class ProductsController {
@@ -14,7 +23,10 @@ export class ProductsController {
     try {
       const result = await firstValueFrom(
         this.httpService.get(
-          process.env.PRODUCT_API_BASE_URL + `${ProductPaths.GET_PRODUCT}`,
+          getPathname(
+            process.env.PRODUCT_API_BASE_URL,
+            ProductPaths.GET_PRODUCT,
+          ),
           {
             ...(req.headers.authorization && {
               headers: {
@@ -39,10 +51,11 @@ export class ProductsController {
     try {
       const result = await firstValueFrom(
         this.httpService.get(
-          process.env.PRODUCT_API_BASE_URL +
-            `${ProductPaths.GET_PRODUCT}` +
-            '/' +
+          getPathname(
+            process.env.PRODUCT_API_BASE_URL,
+            ProductPaths.GET_PRODUCT,
             id,
+          ),
           {
             ...(req.headers.authorization && {
               headers: {
@@ -58,9 +71,36 @@ export class ProductsController {
     }
   }
 
-  /* @Post('')
-  createProduct() {}
+  @Post('')
+  async createProduct(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Body() body: unknown,
+  ) {
+    try {
+      const result = await firstValueFrom(
+        this.httpService.post(
+          getPathname(
+            process.env.PRODUCT_API_BASE_URL,
+            ProductPaths.POST_PRODUCT,
+          ),
+          body,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(req.headers.authorization && {
+                Authorization: req.headers.authorization,
+              }),
+            },
+          },
+        ),
+      );
+      return buildResponse(res, result.status, result.data);
+    } catch (error) {
+      return handleError(error, res);
+    }
+  }
 
-  @Delete('')
+  /*  @Delete('')
   deleteProduct() {} */
 }

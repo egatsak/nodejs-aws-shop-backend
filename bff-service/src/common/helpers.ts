@@ -22,6 +22,10 @@ export function handleError(error: Error, res: Response) {
   });
 }
 
+export function getPathname(...pathParts: string[]) {
+  return pathParts.join('/');
+}
+
 export function stringify(obj: object) {
   let cache = [];
   const str = JSON.stringify(obj, function (key, value) {

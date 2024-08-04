@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 import { CartPaths } from 'src/common/cartPaths';
-import { buildResponse, handleError } from 'src/common/helpers';
+import { buildResponse, getPathname, handleError } from 'src/common/helpers';
 
 @Controller('profile/cart')
 export class CartController {
@@ -14,7 +14,7 @@ export class CartController {
     try {
       const result = await firstValueFrom(
         this.httpService.get(
-          process.env.CART_API_BASE_URL + `${CartPaths.GET_CART}`,
+          getPathname(process.env.CART_API_BASE_URL, CartPaths.GET_CART),
           {
             ...(req.headers.authorization && {
               headers: {
@@ -40,7 +40,7 @@ export class CartController {
     try {
       const result = await firstValueFrom(
         this.httpService.put(
-          process.env.CART_API_BASE_URL + `${CartPaths.PUT_CART}`,
+          getPathname(process.env.CART_API_BASE_URL, CartPaths.PUT_CART),
           body,
           {
             headers: {
@@ -91,7 +91,7 @@ export class CartController {
     try {
       const result = await firstValueFrom(
         this.httpService.post(
-          process.env.CART_API_BASE_URL + `${CartPaths.CHECKOUT}`,
+          getPathname(process.env.CART_API_BASE_URL, CartPaths.CHECKOUT),
           body,
           {
             headers: {
