@@ -2,8 +2,8 @@ import { Body, Controller, Get, Post, Put, Req, Res } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
-import { CartPaths } from 'src/common/cartPaths';
 import { buildResponse, getPathname, handleError } from 'src/common/helpers';
+import { CartPaths } from 'src/common/paths';
 
 @Controller('profile/cart')
 export class CartController {
@@ -58,29 +58,6 @@ export class CartController {
       return handleError(error, res);
     }
   }
-
-  /* @Delete('')
-  async deleteCart(@Req() req: Request, @Res() res: Response) {
-    const result = await firstValueFrom(
-      this.httpService
-        .delete(process.env.CART_API_BASE_URL + `${CartPaths.DELETE_CART}`, {
-          ...(req.headers.authorization && {
-            headers: {
-              Authorization: req.headers.authorization,
-            },
-          }),
-        })
-        .pipe(
-          catchError((error) => {
-            if (error instanceof AxiosError) {
-              buildResponse(res, error.response.status, error.response.data);
-              return throwError(() => error);
-            }
-          }),
-        ),
-    );
-    buildResponse(res, result.status, result.data);
-  } */
 
   @Post('checkout')
   async checkout(

@@ -11,8 +11,8 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
-import { ProductPaths } from 'src/common/productPaths';
 import { buildResponse, getPathname, handleError } from 'src/common/helpers';
+import { ProductPaths } from 'src/common/paths';
 
 @Controller('products')
 export class ProductsController {
@@ -25,7 +25,7 @@ export class ProductsController {
         this.httpService.get(
           getPathname(
             process.env.PRODUCT_API_BASE_URL,
-            ProductPaths.GET_PRODUCT,
+            ProductPaths.GET_PRODUCTS,
           ),
           {
             ...(req.headers.authorization && {
@@ -53,7 +53,7 @@ export class ProductsController {
         this.httpService.get(
           getPathname(
             process.env.PRODUCT_API_BASE_URL,
-            ProductPaths.GET_PRODUCT,
+            ProductPaths.GET_PRODUCTS,
             id,
           ),
           {
