@@ -1,3 +1,4 @@
+import { AxiosError } from 'axios';
 import { Response } from 'express';
 
 export function buildResponse(res: Response, statusCode: number, data: any) {
@@ -8,6 +9,17 @@ export function buildResponse(res: Response, statusCode: number, data: any) {
     'access-control-allow-headers': '*',
   });
   return res.end(data ? JSON.stringify(data) : null);
+}
+
+export function handleError(error: Error, res: Response) {
+  if (error instanceof AxiosError) {
+    return buildResponse(res, error.response.status, error.response.data);
+  }
+
+  return buildResponse(res, 502, {
+    message: error.message ?? 'Bad gateway',
+    statusCode: 502,
+  });
 }
 
 export function stringify(obj: object) {
@@ -24,5 +36,6 @@ export function stringify(obj: object) {
     return value;
   });
   cache = null; // reset the cache
+
   return str;
 }
