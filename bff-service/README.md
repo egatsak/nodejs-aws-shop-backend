@@ -71,3 +71,34 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](LICENSE).
+
+## EB container
+
+Elastic Beanstalk uses `docker-compose.yml` file to pull built application image from Docker Hub and run a container.
+
+* `npm run eb:init"` - initializes Elastic Beanstalk application
+* `npm run eb:createenv` - creates development env for an EB container
+* `npm run eb:terminate` - terminates development environment
+
+EB container with running app is available at `http://egatsak-bff-api-development.us-east-1.elasticbeanstalk.com/bff`
+
+Endpoints: 
+
+`GET /ping` - healthcheck
+`GET /profile/cart` - get cart
+`PUT /profile/cart` - add items to cart
+`DELETE /profile/cart` - delete cart
+`POST /profile/cart/checkout` - create order & switch cart status to `ORDERED` 
+`GET /products` - list all products 
+`GET /products/:id` - get product by ID
+`POST /products` - create product
+
+One can use this environment to test using Postman or Insomnia. Insomnia collection is included in the repo.
+
+## API Gateway proxy
+
+EB container exposes only http server, so we use API Gateway HTTP API to expose the application at https server to integrate with the frontend.
+
+HTTP API is available at `https://y7yrqfp8r9.execute-api.us-east-1.amazonaws.com/`
+
+Endpoints are the same as above.
