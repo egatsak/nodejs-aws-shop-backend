@@ -1,0 +1,38 @@
+# Are installed inside container
+node_modules
+
+# Is generated at build time inside container
+dist
+
+# Are used by docker when generating image & running the container, aren't used inside image & container
+.dockerignore
+Dockerfile
+compose*.yaml
+
+# Isn't used on build time
+*.example
+
+# Git infrastructure doesn't exist inside container/image 
+.git
+.gitignore
+
+# Documentation is needed only for human entities
+README.md
+Insomnia_aws.json
+
+# AWS CDK files are not needed for running bare nestjs server inside docker
+cdk.json
+cdk.out
+tsconfig.cdk.json
+cdk.context.json
+jest-cdk.config.js
+bin
+lib
+
+# Clean code & code analyzer files are not needed inside container 
+.eslintrc.js
+.prettierrc
+
+# Elastic beanstalk files
+.ebextensions
+.elasticbeanstalk

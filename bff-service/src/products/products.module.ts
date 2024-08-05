@@ -10,7 +10,7 @@ import { HttpModule } from '@nestjs/axios';
       maxRedirects: 5,
     }),
     CacheModule.register({
-      ttl: 120000,
+      ttl: Number(process.env.CACHE_EXPIRE_TIME_PERIOD) ?? 120000,
     }),
   ],
   controllers: [ProductsController],
