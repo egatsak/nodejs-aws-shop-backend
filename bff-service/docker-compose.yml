@@ -1,0 +1,9 @@
+name: bff-api
+services: 
+  nestjs:
+    image: egatsak/egatsak-bff-api
+    env_file:
+      - .env
+    ports: 
+      - 80:${PORT} # expose-to-the-world : only-in-the-docker
+    command: sh -c "npm run start:prod"
