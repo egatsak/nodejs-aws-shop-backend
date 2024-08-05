@@ -1,9 +1,11 @@
 import { HttpService } from '@nestjs/axios';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   Body,
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   Post,
   Req,
@@ -11,18 +13,29 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
+import { Cache } from 'cache-manager';
+import { PRODUCTS_CACHE_KEY } from 'src/common/constants';
 import { buildResponse, getPathname, handleError } from 'src/common/helpers';
 import { ProductPaths } from 'src/common/paths';
+import { Product } from 'src/common/types';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
   @Get('')
   async getProducts(@Req() req: Request, @Res() res: Response) {
+    const products = await this.cacheManager.get<Product[]>(PRODUCTS_CACHE_KEY);
+    if (products) {
+      return buildResponse(res, 200, products);
+    }
+
     try {
       const result = await firstValueFrom(
-        this.httpService.get(
+        this.httpService.get<Product[]>(
           getPathname(
             process.env.PRODUCT_API_BASE_URL,
             ProductPaths.GET_PRODUCTS,
@@ -36,6 +49,9 @@ export class ProductsController {
           },
         ),
       );
+
+      await this.cacheManager.set(PRODUCTS_CACHE_KEY, result.data);
+
       return buildResponse(res, result.status, result.data);
     } catch (error) {
       return handleError(error, res);
@@ -50,7 +66,7 @@ export class ProductsController {
   ) {
     try {
       const result = await firstValueFrom(
-        this.httpService.get(
+        this.httpService.get<Product>(
           getPathname(
             process.env.PRODUCT_API_BASE_URL,
             ProductPaths.GET_PRODUCTS,
@@ -79,7 +95,7 @@ export class ProductsController {
   ) {
     try {
       const result = await firstValueFrom(
-        this.httpService.post(
+        this.httpService.post<Product>(
           getPathname(
             process.env.PRODUCT_API_BASE_URL,
             ProductPaths.POST_PRODUCT,
