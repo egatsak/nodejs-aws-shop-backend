@@ -4,9 +4,9 @@ import { Response } from 'express';
 export function buildResponse(res: Response, statusCode: number, data: any) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json',
-    'access-control-allow-methods': '*',
-    'access-control-allow-origin': '*',
-    'access-control-allow-headers': '*',
+    'Access-Control-Allow-Methods': '*',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': '*',
   });
   return res.end(data ? JSON.stringify(data) : null);
 }
